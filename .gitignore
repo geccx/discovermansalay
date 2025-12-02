@@ -1,0 +1,22 @@
+# Node modules
+**/node_modules
+**/.env
+
+# Build and dist folders
+frontend/dist
+frontend/.vite
+build/
+.next/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS generated files
+.DS_Store
+Thumbs.db

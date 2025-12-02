@@ -1,0 +1,330 @@
+/* Login Page - Unique Class Names */
+
+.login-form-container {
+  width: 100%;
+  max-width: 400px;
+  margin: 80px auto;
+  padding: 30px;
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.login-title {
+  text-align: center;
+  color: #033859;
+  margin-bottom: 20px;
+}
+
+.login-input {
+  width: 90%;
+  padding: 10px 14px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.login-submit-button {
+  width: 50%;
+  padding: 12px;
+  background-color: #F25749;
+  color: white;
+  border: none;
+  border-radius: 99px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  display: block;
+  margin: 0 auto;
+}
+
+.login-submit-button:hover {
+  background-color: #d8463d;
+}
+
+.login-error-message {
+  color: red;
+  margin-top: 10px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.login-register-link {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.login-back-button {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  color: #033859;
+  font-size: 14px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: color 0.3s ease;
+}
+
+.login-back-button:hover {
+  color: #F25749;
+}
+
+.password-wrapper {
+  position: relative;
+}
+
+.show-password-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #0077cc;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+
+.error-message {
+  color: red;
+  margin-top: 10px;
+  text-align: center;
+  font-size: 14px;
+}
+
+/* Register Page - Unique Class Names */
+
+.register-form-container {
+  width: 100%;
+  max-width: 400px;
+  margin: 80px auto;
+  padding: 30px;
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.register-title {
+  text-align: center;
+  color: #033859;
+  margin-bottom: 20px;
+}
+
+.register-input {
+  width: 90%;
+  padding: 10px 14px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.register-submit-button {
+  width: 50%;
+  padding: 12px;
+  background-color: #F25749;
+  color: white;
+  border: none;
+  border-radius: 99px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  display: block;
+  margin: 0 auto;
+}
+
+.register-submit-button:hover {
+  background-color: #d8463d;
+}
+
+.register-error-message {
+  color: red;
+  margin-top: 10px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.register-success-message {
+  color: green;
+  margin-top: 10px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.register-link {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 14px;
+}
+
+.register-link a {
+  color: #F25749;
+  text-decoration: none;
+}
+
+.register-link a:hover {
+  text-decoration: underline;
+}
+
+
+.map-page-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.map-controls {
+  position: absolute;
+  top: 12px;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 16px;
+  align-items: center;
+}
+
+.back-button-floating,
+.location-button,
+.cancel-button {
+  background-color: #033859;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 7px;
+  font-size: 12px;
+  cursor: pointer;
+  margin: 0 10px;
+}
+
+.back-button-floating:hover {
+  background-color: #F25749;
+}
+
+.location-button:hover {
+  background-color: #1a73e8;
+}
+
+.cancel-button {
+  background-color: #b00020;
+}
+
+.cancel-button:hover {
+  background-color: #d32f2f;
+}
+
+.layer-toggle {
+  display: flex;
+  align-items: center;
+  background-color: #033859;
+  padding: 6px 10px;
+  border-radius: 4px;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
+}
+
+.layer-label {
+  font-size: 13px;
+  margin-right: 8px;
+  color: #ffffff;
+}
+
+.layer-toggle select {
+  padding: 4px 6px;
+  font-size: 13px;
+  color: #ffffff;
+  border-radius: 4px;
+  background-color: #033859;
+  cursor: pointer;
+  border: 1px solid #033859;
+}
+
+.map-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.leaflet-map {
+  height: 100%;
+  width: 100%;
+  z-index: 1;
+}
+
+.custom-circle-icon {
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid white;
+  box-shadow: 0 0 4px rgba(0,0,0,0.3);
+}
+
+.custom-location-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 30px;
+  height: 42px;
+}
+
+.custom-location-icon .marker-pin {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background-color: #1a73e8;
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.4);
+  animation: pulse 1.5s infinite;
+}
+
+.custom-location-icon i {
+  font-size: 24px;
+  color: #1a73e8;
+  position: absolute;
+  bottom: 0;
+}
+
+.my-location-icon-button {
+  position: absolute;
+  bottom: 100px; /* Just above ZoomControls */
+  right: 10px;
+  background-color: white;
+  border: none;
+  border-radius: 50%;
+  padding: 8px;
+  width: 40px;
+  height: 40px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  cursor: pointer;
+  z-index: 1000;
+}
+
+.my-location-icon-button img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.2);
+    opacity: 0;
+  }
+}
+
+.leaflet-routing-container {
+  display: none !important;
+}

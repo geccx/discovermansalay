@@ -1,0 +1,2046 @@
+.app-container {
+  display: flex;
+  height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 250px;
+  background-color: #fff;
+  padding: 20px;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column; /* <-- Stack items vertically */
+  align-items: flex-start; /* Align items to the left */
+  gap: 30px;
+}
+
+.sidebar h2 {
+  font-size: 20px;
+  margin-bottom: 10px;
+  color: #033859;
+}
+
+.menu-item {
+  padding: 10px 25px;
+  width: 80%; /* Make buttons full width */
+  cursor: pointer;
+  border-radius: 5px;
+  color: #033859;
+  text-align: left;
+  transition: background-color 0.3s;
+}
+
+.menu-item:hover,
+.menu-item.active {
+  background-color: #F25749;
+  color: white;
+}
+
+.submenu-items {
+  margin-top: 5px;
+  margin-left: 10px; /* Slight indent */
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 80%; /* Match or adjust relative to parent */
+}
+
+.submenu-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: #033859;
+  background-color: transparent;
+  transition: background-color 0.3s;
+}
+
+.submenu-item:hover,
+.submenu-item.active {
+  background-color: #F25749;
+  color: white;
+}
+
+.dashboard-overview {
+  padding: 20px;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.dashboard-overview h2 {
+  margin-bottom: 20px;
+  font-weight: 700;
+}
+
+.overview-card-list {
+  display: flex;
+  gap: 15px;
+  justify-content: space-between;
+}
+
+.overview-card {
+  flex: 1;
+  background: white;
+  border-radius: 10px;
+  padding: 15px 20px;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  min-width: 0;
+  cursor: default;
+  transition: box-shadow 0.3s ease;
+}
+
+.overview-card:hover {
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.overview-card h3 {
+  margin-bottom: 10px;
+  font-weight: 600;
+  color: var(--highlight-color);
+  font-size: 1.1rem;
+}
+
+.overview-card p {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0;
+  user-select: none;
+}
+
+/* Main content */
+.content {
+  flex: 1;
+
+  padding: 20px;
+  overflow-y: auto;
+}
+
+/* Navbar */
+.adminnavbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.toggle-btn {
+  font-size: 20px;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  color: rgb(0, 0, 0);
+  cursor: pointer;
+}
+
+.navbar h1 {
+  flex: 1;
+  text-align: center;
+  font-size: 24px;
+  color: #033859;
+}
+
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.refresh-btn,
+.logout-btn {
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.profile-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+
+.top-bar {
+  position: absolute;
+  top: 20px;
+  right: 30px;
+}
+
+.home-button {
+  background-color: #40739e;
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.3s ease;
+}
+
+.home-button:hover {
+  background-color: #273c75;
+}
+
+
+/* Optional smooth animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+
+.icon {
+  width: 20px;
+  height: 20px;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+
+
+
+/* UserManagement Styles */
+
+.add-user-btn {
+  background-color: var(--highlight-color);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-bottom: 20px;
+}
+
+.add-user-btn:hover {
+  background-color: #d94b3f;
+}
+table {
+  width: 100%;
+  border-collapse: separate; /* allow spacing between rows */
+  border-spacing: 0 12px; /* vertical space between rows */
+  font-size: 14px;
+}
+
+th,
+td {
+  padding: 16px 12px; /* more padding for modern look */
+  text-align: left;
+  color: var(--text-color);
+}
+
+th {
+  background-color: #F25749;
+  color: white;
+  font-weight: 700;
+}
+
+/* Rounded corners on the first and last th in the header */
+thead th:first-child {
+  border-top-left-radius: 10px;
+}
+
+thead th:last-child {
+  border-top-right-radius: 10px;
+}
+
+tbody tr {
+  background-color: white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+
+tbody tr:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
+  background-color: #fff5f3;
+}
+
+td {
+  border-bottom: none; /* Remove bottom border for clean card-like look */
+}
+
+/* Remove bottom border from last row to avoid double spacing */
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-form {
+  background-color: white;
+  padding: 20px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 550px;
+  height: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+
+.modal-form h2 {
+  margin-top: 0;
+  color: var(--text-color);
+  margin-bottom: 20px;
+  font-size: 20px;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 10px;
+}
+
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.form-group input,
+.form-group select {
+  width: 90%;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  font-size: 12px;
+  color: var(--text-color);
+  background-color: #f9f9f9;
+}
+
+.form-group p {
+  margin: 0;
+  padding: 8px;
+  background-color: #f5f5f5;
+  border-radius: 6px;
+  color: var(--text-color);
+  font-size: 14px;
+}
+
+.button-group {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.button-group button {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.3s;
+}
+
+.button-group button:not(.cancel-btn):not(.delete-btn) {
+  background-color: var(--highlight-color);
+  color: white;
+}
+
+.button-group button:not(.cancel-btn):not(.delete-btn):hover {
+  background-color: #d94b3f;
+}
+
+.cancel-btn {
+  background-color: #ccc;
+  color: #333;
+}
+
+.cancel-btn:hover {
+  background-color: #b3b3b3;
+}
+
+.delete-btn {
+  background-color: #d94b3f;
+  color: white;
+}
+
+.delete-btn:hover {
+  background-color: #701414;
+}
+
+.error {
+  color: #c62828;
+  background-color: #fbe9e7;
+  padding: 10px;
+  margin: 12px 0;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+
+
+.profile-large {
+  width: 180px;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 12px;
+  background-color: #f3f3f3;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+/* Add spacing consistency */
+.modal-form > h3 {
+  margin-bottom: 20px;
+}
+
+/* Optional: make sure image column doesn’t collapse */
+.modal-form > div {
+  display: flex;
+  gap: 20px;
+}
+
+.modal-form > div > div:last-child {
+  flex-shrink: 0;
+  width: 180px;
+}
+
+
+
+.pagination button {
+  margin: 0 5px;
+  padding: 8px 12px;
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  background-color: var(--highlight-color);
+  color: white;
+  font-weight: bold;
+  transition: background-color 0.3s;
+}
+
+.pagination button:hover:not(:disabled) {
+  background-color: #d94b3f;
+}
+
+.pagination button:disabled {
+  background-color: #ccc;
+  cursor: default;
+}
+
+
+/* NAVBARCMS */
+
+.navbar-container {
+  max-width: 320px;
+  margin: 20px auto;
+  font-family: Arial, sans-serif;
+  color: var(--text-color);
+  background-color: var(--background-color);
+  padding: 15px;
+  border-radius: 6px;
+  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.1);
+}
+
+@media (min-width: 600px) {
+  .navbar-container {
+    max-width: 480px;
+  }
+}
+
+.navbar-title {
+  text-align: center;
+  margin-bottom: 15px;
+  font-size: 1.25rem;
+  color: var(--highlight-color);
+}
+
+.navbar-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.navbar-preview-container {
+  text-align: center;
+}
+
+.navbar-label {
+  font-weight: 600;
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+}
+
+.navbar-logo-preview {
+  max-width: 100%;
+  height: auto;
+  max-height: 200px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background-color: #fff;
+  object-fit: contain;
+  display: inline-block;
+}
+
+.navbar-no-logo {
+  font-style: italic;
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.navbar-input-group {
+  display: flex;
+  justify-content: center;
+}
+
+.navbar-file-input {
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #f8f8f8;
+}
+
+.navbar-submit-btn {
+  padding: 8px 16px;
+  background-color: var(--highlight-color);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 0.25s ease;
+}
+
+.navbar-submit-btn:hover {
+  background-color: #d44337;
+}
+
+.navbar-submit-btn:disabled {
+  background-color: #aaa;
+  cursor: not-allowed;
+}
+
+.navbar-submit-btn:focus {
+  outline: 2px solid var(--highlight-color);
+  outline-offset: 2px;
+}
+
+.navbar-message {
+  font-size: 0.9rem;
+  padding: 8px;
+  border-radius: 4px;
+  margin-top: 10px;
+  text-align: center;
+}
+
+.navbar-message.success {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.navbar-message.error {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+
+
+
+.herocms-container {
+  max-width: 600px;
+  margin: 2rem auto;
+  background: #f8f8f8;
+  padding: 2rem;
+  border-radius: 10px;
+  font-family: Arial, Helvetica, sans-serif;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.herocms-container h2 {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  color: #333;
+}
+
+.herocms-form label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #555;
+}
+
+.herocms-form textarea {
+  width: 100%;
+  font-family: monospace;
+  font-size: 1rem;
+  padding: 0.5rem;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  resize: vertical;
+  margin-bottom: 1rem;
+}
+
+.herocms-form input[type="file"] {
+  margin-bottom: 1rem;
+  display: none; /* hide native file input */
+}
+
+/* Media preview container (for image or video) */
+.herocms-media-preview {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: center;
+}
+
+.herocms-media-preview p {
+  font-weight: 600;
+  color: #444;
+  margin: 0;
+}
+
+.herocms-media-preview img,
+.herocms-media-preview video {
+  width: 500px;
+  height: 300px;
+  border-radius: 8px;
+  border: 2px solid #d9443b; /* highlight color */
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.15);
+  object-fit: cover;
+  display: block;
+}
+
+.herocms-form button {
+  background-color: #d9443b; /* highlight color */
+  color: white;
+  border: none;
+  margin: auto 5rem;
+  padding: 0.5rem 2rem;
+  font-size: 1.1rem;
+  border-radius: 25px;
+  cursor: pointer;
+  font-weight: bold;
+  width: 70%;
+  transition: background-color 0.3s ease;
+  display: block;
+}
+
+.herocms-form button:hover:enabled {
+  background-color: #b32a25;
+}
+
+.herocms-form button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* Custom file input button */
+.custom-file-button {
+  display: inline-block;
+  margin: 0.5rem auto 2rem auto; /* top margin + horizontal center */
+  padding: 0.3rem 0.8rem;
+  background-color: #d9443b;
+  color: white;
+  border-radius: 20px;
+  cursor: pointer;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: background-color 0.3s ease;
+  user-select: none;
+  text-align: center;
+  width: max-content;
+  display: block;
+}
+
+.custom-file-button:hover,
+.custom-file-button:focus {
+  background-color: #b32a25;
+  outline: none;
+}
+
+.selected-file {
+  text-align: center;
+  font-style: italic;
+  margin-bottom: 1rem;
+}
+
+/* Message display */
+.herocms-message {
+  margin-top: 1rem;
+  font-weight: 600;
+  text-align: center;
+  color: #e90000;
+}
+
+
+.custom-file-button {
+  display: inline-block;
+  padding: 10px 15px;
+  background-color: #d9443b;
+  color: white;
+  cursor: pointer;
+  border-radius: 5px;
+  user-select: none;
+  margin-top: 10px;
+}
+
+.custom-file-button:hover,
+.custom-file-button:focus {
+  background-color: #033859;
+  outline: none;
+}
+
+/* ExploreCMS */
+
+/* Main container */
+.explorecms-container {
+  max-width: 1200px;
+  margin: 1rem auto;
+  padding: 0 1rem;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Headings */
+.explorecms-container h2,
+.explorecms-container h3 {
+  color: #333;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+/* Add Button */
+.btn-add {
+  display: block;
+  width: 100%;
+  max-width: 200px;
+  margin: 0 auto 2rem auto;
+  padding: 0.8rem 0;
+  background-color: #d9443b;
+  color: white;
+  font-weight: bold;
+  font-size: 1rem;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.btn-add:hover {
+  background-color: #b32a25;
+}
+
+/* Message */
+.message {
+  text-align: center;
+  font-weight: 600;
+  color: #e90000;
+  margin-bottom: 1rem;
+}
+
+.destinations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+  list-style: none;
+  padding-left: 0;
+  grid-auto-rows: 1fr; /* 👈 Make all grid rows equal height */
+}
+
+.destination-card {
+  background: #f8f8f8;
+  border-radius: 10px;
+  padding: 1rem;
+  box-shadow: 0 0 6px rgba(0,0,0,0.1);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100%; /* minimum height for consistency */
+  height: auto; /* let it grow naturally */
+  overflow: visible; /* allow content to flow properly */
+}
+
+
+.destination-image {
+  width: 100%;
+  max-width: 300px;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid #d9443b;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.15);
+  margin-bottom: .5rem;
+  flex-shrink: 0;
+}
+
+/* Container for text so it aligns well */
+.destination-text {
+  flex-grow: 1; /* takes remaining vertical space */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 300px;
+}
+
+/* Title styling */
+.destination-text strong {
+  font-size: 16px;
+  color: #222;
+  line-height: 1.2;
+  min-height: 2.4em; /* about 2 lines */
+}
+
+/* City and email styling */
+.destination-text p {
+  font-size: 14px;
+  color: #555;
+  margin: 0;
+  text-align: left;
+}
+
+/* Card action buttons */
+.actions {
+  margin-top: 20px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 0.7rem;
+}
+
+.btn-edit,
+.btn-delete {
+  flex: 1;
+  padding: 0.4rem 0;
+  border-radius: 25px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  font-size: 0.9rem;
+  transition: background-color 0.3s ease;
+}
+
+/* Edit button */
+.btn-edit {
+  background-color: #d9443b;
+  color: white;
+}
+.btn-edit:hover {
+  background-color: #b32a25;
+}
+
+/* Delete button */
+.btn-delete {
+  background-color: #f66;
+  color: white;
+}
+.btn-delete:hover {
+  background-color: #c33;
+}
+
+/* Modal backdrop */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+/* Modal content */
+.modal-content {
+  background: white;
+  border-radius: 10px;
+  padding: 2rem;
+  width: 95%;
+  max-width: 700px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.25);
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+/* Form layout */
+.explore-form {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.explore-form h3 {
+  margin-bottom: 1.5rem;
+  text-align: center;
+  color: #333;
+}
+
+.explore-form label {
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+  color: #555;
+  user-select: none;
+}
+
+/* Inputs */
+.explore-form input[type="text"],
+.explore-form input[type="email"] {
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 1rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+  font-family: Arial, Helvetica, sans-serif;
+  width: 80%;
+}
+
+/* File input hidden */
+.explore-form input[type="file"] {
+  display: none;
+}
+
+/* Custom file button */
+.custom-file-button {
+  display: inline-block;
+  padding: 10px 15px;
+  background-color: #d9443b;
+  color: white;
+  cursor: pointer;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  user-select: none;
+  margin-bottom: 1rem;
+  text-align: center;
+  width: max-content;
+}
+
+.custom-file-button:hover,
+.custom-file-button:focus {
+  background-color: #b32a25;
+  outline: none;
+}
+
+/* Image preview section (side of form) */
+.media-preview {
+  width: 260px;
+  max-width: 100%;
+  margin-top: 7rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.media-preview img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid #d9443b;
+  box-shadow: 0 0 8px rgba(0,0,0,0.15);
+}
+
+/* Buttons row */
+.form-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+/* Submit button */
+.explore-form button[type="submit"] {
+  background-color: #d9443b;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.5rem;
+  border-radius: 25px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  flex: 1;
+}
+
+.explore-form button[type="submit"]:hover:enabled {
+  background-color: #b32a25;
+}
+
+.explore-form button[type="submit"]:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* Cancel button */
+.btn-cancel {
+  background-color: #666;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.5rem;
+  border-radius: 25px;
+  font-weight: bold;
+  cursor: pointer;
+  flex: 1;
+  transition: background-color 0.3s ease;
+}
+
+.btn-cancel:hover {
+  background-color: #444;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .modal-content {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .media-preview {
+    width: 100%;
+    height: auto;
+  }
+
+  .form-buttons {
+    flex-direction: column;
+  }
+}
+
+
+/* HighlightEventsCMS.css */
+
+/* Container */
+.highlightcms-container {
+  max-width: 100%;
+  margin: 1rem auto;
+  padding: 1rem 1.5rem;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #333;
+}
+
+.highlightcms-title {
+  text-align: center;
+  margin-bottom: 2rem;
+  font-weight: 700;
+}
+
+/* Add button */
+.highlightcms-add-btn {
+  background-color: #d9443b;
+  color: white;
+  font-weight: 700;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  display: block;
+  margin: 0 1rem 1rem auto;
+  transition: background-color 0.3s ease;
+}
+
+.highlightcms-add-btn:hover {
+  background-color: #b32a25;
+}
+
+/* Event list */
+.highlightcms-event-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 2rem;
+}
+
+/* Event card */
+.highlightcms-event-card {
+  background: #fff;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: transform 0.2s ease;
+}
+
+.highlightcms-event-card:hover {
+  transform: translateY(-5px);
+}
+
+/* Event image */
+.highlightcms-event-image {
+  width: 100%;
+  max-width: 220px;
+  height: 130px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid #d9443b;
+  margin-bottom: 1rem;
+  box-shadow: 0 0 6px rgba(0,0,0,0.15);
+}
+
+/* Event title */
+.highlightcms-event-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.2rem;
+  color: #222;
+}
+
+/* Event description and date */
+.highlightcms-event-desc,
+.highlightcms-event-date {
+  margin: 0.2rem 0;
+  font-size: 0.95rem;
+  color: #555;
+}
+
+/* Event actions */
+.highlightcms-event-actions {
+  margin-top: 1rem;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.highlightcms-edit-btn,
+.highlightcms-delete-btn {
+  flex: 1;
+  padding: 0.5rem 0;
+  border-radius: 25px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.3s ease;
+}
+
+/* Edit button */
+.highlightcms-edit-btn {
+  background-color: #d9443b;
+  color: white;
+}
+
+.highlightcms-edit-btn:hover {
+  background-color: #b32a25;
+}
+
+/* Delete button */
+.highlightcms-delete-btn {
+  background-color: #f66;
+  color: white;
+}
+
+.highlightcms-delete-btn:hover {
+  background-color: #c33;
+}
+
+/* Modal backdrop */
+.highlightcms-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+/* Modal content */
+.highlightcms-modal-content {
+  background: white;
+  width: 90%;
+  max-width: 900px;
+  border-radius: 12px;
+  display: flex;
+  padding: 1.5rem;
+  gap: 2rem;
+  box-shadow: 0 0 15px rgba(0,0,0,0.25);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Form inside modal */
+.highlightcms-form {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Form title */
+.highlightcms-form-title {
+  margin: 0 0 0.5rem 0;
+  font-weight: 700;
+  font-size: 1.4rem;
+  text-align: center;
+}
+
+/* Labels */
+.highlightcms-label {
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+
+/* Inputs & textarea */
+.highlightcms-input,
+.highlightcms-textarea {
+  padding: 0.6rem 0.8rem;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-family: Arial, Helvetica, sans-serif;
+  resize: vertical;
+}
+
+.highlightcms-textarea {
+  min-height: 80px;
+}
+
+/* Custom file input */
+.custom-file-label {
+  display: inline-block;
+  padding: 0.6rem 0.8rem;
+  background: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  cursor: pointer;
+  width: fit-content;
+  font-size: 1rem;
+  user-select: none;
+  position: relative;
+}
+
+.highlightcms-file-input {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+/* Date range picker */
+.highlightcms-daterange-picker {
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  max-width: 320px;
+}
+
+/* Modal footer buttons */
+.highlightcms-modal-footer {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.highlightcms-submit-btn,
+.highlightcms-cancel-btn {
+  flex: 1;
+  padding: 0.8rem 0;
+  border-radius: 25px;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s ease;
+}
+
+/* Submit button */
+.highlightcms-submit-btn {
+  background-color: #d9443b;
+  color: white;
+}
+
+.highlightcms-submit-btn:hover {
+  background-color: #b32a25;
+}
+
+/* Cancel button */
+.highlightcms-cancel-btn {
+  background-color: #ccc;
+  color: #333;
+}
+
+.highlightcms-cancel-btn:hover {
+  background-color: #999;
+}
+
+/* Image preview container */
+.highlightcms-image-preview {
+  width: 300px;   /* fixed width */
+  height: 400px;  /* fixed height */
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid #d9443b;
+  box-shadow: 0 0 8px rgba(0,0,0,0.15);
+  margin-left: 1rem;
+  background: #f0f0f0;
+}
+/* Preview image */
+.highlightcms-preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Preview placeholder */
+.highlightcms-preview-placeholder {
+  font-size: 1rem;
+  color: #999;
+  padding: 1rem;
+  text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .highlightcms-modal-content {
+    flex-direction: column;
+    max-height: 95vh;
+  }
+
+  .highlightcms-image-preview {
+    width: 100%;
+    height: 200px;
+    margin-top: 1rem;
+  }
+
+  .highlightcms-daterange-picker {
+    max-width: 100%;
+  }
+}
+
+.highlightcms-crop-btn {
+  background-color: #d9443b;
+  color: white;
+  border: none;
+  border-radius: 25px;
+  padding: 0.8rem 0;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s ease;
+  width: 50%;
+}
+
+.highlightcms-crop-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.highlightcms-crop-btn:not(:disabled):hover {
+  background-color: #b32a25;
+}
+
+/* cropper itself should fill container */
+.cropper-container {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 8px;
+  background-color: #fff;
+}
+
+
+/* Container and Cards */
+.experiencecms-container {
+  max-width: 100%;
+  margin: 1rem auto;
+  padding: 1rem 1.5rem;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #333;
+}
+
+.experiencecms-title {
+  text-align: center;
+  margin-bottom: 2rem;
+  font-weight: 700;
+}
+
+.experiencecms-card-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.experiencecms-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  padding: 1rem;
+  text-align: center;
+}
+
+.experiencecms-card.empty {
+  background: #f9f9f9;
+  border: 2px dashed #ccc;
+  color: #999;
+  font-style: italic;
+}
+
+.experiencecms-image {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid #d9443b;
+  margin-bottom: 1rem;
+}
+
+.experiencecms-card-title {
+  font-size: 1.2rem;
+  color: #222;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.experiencecms-link {
+  display: inline-block;
+  margin: 0.5rem 0;
+  color: #d9443b;
+  text-decoration: underline;
+  font-size: 0.95rem;
+}
+
+.experiencecms-card-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+/* Buttons */
+.experiencecms-add-btn,
+.experiencecms-edit-btn,
+.experiencecms-delete-btn,
+.experiencecms-submit-btn,
+.experiencecms-cancel-btn {
+  padding: 0.6rem 1rem;
+  border-radius: 25px;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background-color 0.3s ease;
+}
+
+.experiencecms-add-btn {
+  background-color: #d9443b;
+  color: white;
+  display: block;
+  margin: 1rem auto;
+}
+
+.experiencecms-add-btn:hover {
+  background-color: #b32a25;
+}
+
+.experiencecms-edit-btn {
+  background-color: #d9443b;
+  color: white;
+}
+
+.experiencecms-edit-btn:hover {
+  background-color: #b32a25;
+}
+
+.experiencecms-delete-btn {
+  background-color: #f66;
+  color: white;
+}
+
+.experiencecms-delete-btn:hover {
+  background-color: #c33;
+}
+
+.experiencecms-submit-btn {
+  background-color: #d9443b;
+  color: white;
+}
+
+.experiencecms-submit-btn:hover {
+  background-color: #b32a25;
+}
+
+.experiencecms-cancel-btn {
+  background-color: #ccc;
+  color: #333;
+}
+
+.experiencecms-cancel-btn:hover {
+  background-color: #999;
+}
+
+/* Modal */
+.experiencecms-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.experiencecms-modal {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.2);
+}
+
+.experiencecms-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.experiencecms-form-title {
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.experiencecms-input {
+  padding: 0.6rem 0.8rem;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.experiencecms-form-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+
+
+/* Container */
+.experiencecms-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  font-family: Arial, sans-serif;
+}
+
+/* Add Button */
+.touristspot-add-btn {
+  background-color: #d9443b;
+  color: white;
+  font-weight: bold;
+  padding: 0.6rem 1.2rem;
+  border-radius: 25px;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-bottom: 1.5rem;
+}
+
+.touristspot-add-btn:hover {
+  background-color: #b32a25;
+}
+
+/* Card Grid */
+.touristspot-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Individual Card */
+.touristspot-card {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 1rem;
+  text-align: center;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.touristspot-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+.touristspot-card h4 {
+  font-size: 1.1rem;
+  margin: 0.5rem 0;
+  color: #333;
+}
+
+.touristspot-card p {
+  margin: 0.25rem 0;
+  color: #555;
+  font-size: 0.95rem;
+}
+
+/* Card Image */
+.touristspot-card-image {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+}
+
+/* Card Buttons */
+.touristspot-card-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.experiencecms-edit-btn,
+.experiencecms-delete-btn {
+  padding: 0.4rem 0.75rem;
+  border: none;
+  border-radius: 25px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.experiencecms-edit-btn {
+  background-color: #3498db;
+  color: white;
+}
+
+.experiencecms-edit-btn:hover {
+  background-color: #217dbb;
+}
+
+.experiencecms-delete-btn {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.experiencecms-delete-btn:hover {
+  background-color: #c0392b;
+}
+
+/* Modal Overlay */
+.touristspot-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+/* Modal Box */
+.touristspot-modal {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Form */
+.touristspot-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.touristspot-form-title {
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.touristspot-input {
+  padding: 0.6rem 0.8rem;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.touristspot-input:focus {
+  border-color: #d9443b;
+  outline: none;
+}
+
+/* Form Actions */
+.touristspot-form-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.touristspot-submit-btn,
+.touristspot-cancel-btn {
+  flex: 1;
+  padding: 0.7rem;
+  border-radius: 25px;
+  font-weight: bold;
+  font-size: 0.95rem;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.touristspot-submit-btn {
+  background-color: #d9443b;
+  color: white;
+}
+
+.touristspot-submit-btn:hover {
+  background-color: #b32a25;
+}
+
+.touristspot-cancel-btn {
+  background-color: #ccc;
+  color: #333;
+}
+
+.touristspot-cancel-btn:hover {
+  background-color: #999;
+}
+
+/* Responsive Fix */
+@media (max-width: 480px) {
+  .touristspot-card-actions {
+    flex-direction: column;
+  }
+
+  .experiencecms-edit-btn,
+  .experiencecms-delete-btn {
+    width: 100%;
+  }
+}
+
+/* DestinationManager */
+
+/* DestinationManager */
+
+.dm-container {
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  max-width: 1200px;
+  margin: auto;
+}
+
+.dm-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.dm-btn-add {
+  padding: 0.6rem 1.2rem;
+  background-color: #d9443b;
+  color: white;
+  font-weight: bold;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+.dm-btn-add:hover {
+  background-color: #b32a25;
+}
+
+/* Grid layout */
+.dm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+  list-style: none;
+  padding-left: 0;
+}
+
+/* Card style */
+.dm-card {
+  background: #f8f8f8;
+  border-radius: 10px;
+  padding: 1rem;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 300px;
+  overflow: hidden;
+}
+
+/* Image in card */
+.dm-image {
+  width: 100%;
+  max-width: 300px;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid #d9443b;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.15);
+  margin-bottom: 1rem;
+  flex-shrink: 0;
+}
+
+/* Card content */
+.dm-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 0.4rem;
+  width: 100%;
+  max-width: 300px;
+}
+
+/* Name */
+.dm-content strong {
+  font-size: 16px;
+  color: #222;
+  line-height: 1.2;
+  min-height: 2.4em;
+}
+
+/* Category */
+.dm-content small {
+  font-size: 14px;
+  color: #555;
+}
+
+/* Actions */
+.dm-actions {
+  margin-top: auto;
+  display: flex;
+  justify-content: center;
+  gap: 0.7rem;
+}
+
+.dm-btn-edit,
+.dm-btn-delete {
+  flex: 1;
+  padding: 0.4rem 0;
+  border-radius: 25px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  font-size: 0.9rem;
+  transition: background-color 0.3s ease;
+}
+
+/* Edit button */
+.dm-btn-edit {
+  background-color: #d9443b;
+  color: white;
+}
+
+.dm-btn-edit:hover {
+  background-color: #b32a25;
+}
+
+/* Delete button */
+.dm-btn-delete {
+  background-color: #f66;
+  color: white;
+}
+
+.dm-btn-delete:hover {
+  background-color: #c33;
+}
+
+/* Modal backdrop */
+.dm-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+/* Modal box */
+.dm-modal {
+  background: white;
+  border-radius: 10px;
+  padding: 1.5rem; /* reduced from 2rem */
+  width: 60%;       /* reduced from 80% */
+  max-width: 600px; /* reduced from 800px */
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Form */
+.dm-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.dm-form h3 {
+  margin-bottom: 1.5rem;
+  text-align: center;
+  color: #333;
+}
+
+/* Form body layout */
+.dm-form-body {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.dm-form-left {
+  flex: 1;
+  min-width: 250px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dm-form-preview {
+  flex: 0 0 220px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-height: 250px;
+  overflow: hidden;
+}
+
+.dm-form-preview img {
+  width: 100%;
+  height: auto;
+  max-height: 250px;
+  border-radius: 8px;
+  border: 2px solid #d9443b;
+  object-fit: cover;
+}
+
+/* Inputs */
+.dm-form input[type="text"],
+.dm-form select,
+.dm-form textarea {
+  padding: 0.75rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Dropzone */
+.dm-dropzone {
+  padding: 1rem;
+  background-color: #fff6f6;
+  border: 2px dashed #d9443b;
+  border-radius: 10px;
+  text-align: center;
+  font-weight: 600;
+  cursor: pointer;
+  color: #d9443b;
+  transition: background-color 0.3s ease;
+}
+
+.dm-dropzone.active {
+  background-color: #ffeaea;
+}
+
+/* Modal buttons */
+.dm-form-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.dm-form button[type="submit"],
+.dm-btn-cancel {
+  padding: 0.6rem 1.5rem;
+  border-radius: 25px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  flex: 1;
+  transition: background-color 0.3s ease;
+}
+
+/* Submit */
+.dm-form button[type="submit"] {
+  background-color: #d9443b;
+  color: white;
+  border: none;
+}
+
+.dm-form button[type="submit"]:hover {
+  background-color: #b32a25;
+}
+
+/* Cancel */
+.dm-btn-cancel {
+  background-color: #666;
+  color: white;
+  border: none;
+}
+
+.dm-btn-cancel:hover {
+  background-color: #444;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .dm-modal {
+    padding: 1rem;     /* slightly smaller */
+    width: 90%;        /* adjust for mobile */
+  }
+
+  .dm-form-body {
+    flex-direction: column;
+  }
+
+  .dm-form-preview {
+    flex: 1;
+    max-height: none;
+    margin-top: 1rem;
+  }
+
+  .dm-form-actions {
+    flex-direction: column;
+  }
+}

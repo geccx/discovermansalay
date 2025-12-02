@@ -1,0 +1,828 @@
+
+/* === Navbar base styles === */
+
+.navbar {
+  position: absolute;
+  top: 0;
+  width: 100%;
+  height: 70px;
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: transparent;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  z-index: 100;
+}
+
+.navbar-left {
+  flex: 1;
+}
+
+.navbar-left .logo {
+  height: 60px; 
+  margin-top: 10px;
+}
+
+.navbar-center {
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem 2rem;
+  border-radius: 99px;
+}
+
+.nav-links {
+  display: flex;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nav-links li {
+  display: flex;
+  align-items: center;
+}
+
+/* Updated: text color in transparent navbar */
+.nav-links a,
+.dropdown-toggle {
+  position: relative;
+  text-decoration: none;
+  color: #fdfdfd; /* changed from white */
+  transition: color 0.3s ease;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 550;
+}
+
+/* Underline effect for nav links */
+.nav-links a::after,
+.dropdown-toggle::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: -4px;
+  left: 0;
+  background-color: var(--highlight-color);
+  transition: width 0.3s ease;
+}
+
+.nav-links a:hover,
+.dropdown-toggle:hover {
+  color: var(--highlight-color);
+}
+
+.nav-links a:hover::after,
+.dropdown-toggle:hover::after {
+  width: 100%;
+}
+
+.dropdown {
+  position: relative;
+  cursor: pointer;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: #00000000;
+  border-radius: 8px;
+  padding: 0.5rem 0;
+  z-index: 200;
+  min-width: 180px;
+
+}
+
+/* Updated: dropdown menu links text color */
+.dropdown-menu li {
+  padding: 0.5rem 1.5rem;
+}
+
+.dropdown-menu li a {
+  color: #ffffff; /* changed from white */
+  text-decoration: none;
+  display: block;
+  transition: background 0.2s;
+}
+
+.dropdown-menu li a:hover {
+  background-color: #042d4900;
+}
+
+/* Wishlist section */
+.navbar-wishlist {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  padding-right: 4rem;
+}
+
+/* Updated: wishlist icon color */
+.wishlist-icon {
+  color: #ffffff; /* changed from white */
+  transition: color 0.3s ease;
+  display: flex;
+  align-items: center;
+}
+
+.wishlist-icon:hover {
+  color: var(--highlight-color);
+}
+
+/* === New styles for solid white background on scroll or page change === */
+
+.navbar.navbar-solid {
+  position: fixed; /* Fix so it stays visible */
+  background-color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  z-index: 100;
+}
+
+.navbar.navbar-solid .nav-links a,
+.navbar.navbar-solid .dropdown-toggle,
+.navbar.navbar-solid .wishlist-icon {
+  color: #033859; /* Dark text for white background */
+}
+
+.navbar.navbar-solid .nav-links a:hover,
+.navbar.navbar-solid .dropdown-toggle:hover,
+.navbar.navbar-solid .wishlist-icon:hover {
+  color: var(--highlight-color);
+}
+
+.navbar.navbar-solid .dropdown-menu {
+  background-color: #ffffffee;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.navbar.navbar-solid .dropdown-menu li a {
+  color: #033859;
+}
+
+.navbar.navbar-solid .dropdown-menu li a:hover {
+  background-color: #e6f0fb;
+}
+
+.wishlist-count {
+  position: absolute;
+  top: -7px;
+  right: -12px;
+  background-color: #f44;
+  color: white;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 50%;
+  font-weight: bold;
+  pointer-events: none;
+}
+
+
+.profile-dropdown {
+  position: absolute;
+  top: 120%;
+  right: 0;
+  background: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  padding: 0.5rem 0;
+  border-radius: 6px;
+  z-index: 500;
+  min-width: 160px;
+  display: flex;
+  flex-direction: column;
+}
+
+.dropdown-item {
+  background: none;
+  border: none;
+  color: #033859;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  text-align: left;
+  font-family: inherit;
+  font-size: 0.95rem;
+  text-decoration: none;
+  display: block;
+  transition: background 0.2s, color 0.2s;
+}
+
+.dropdown-item:hover {
+  background-color: #e6f0fb;
+  color: var(--highlight-color);
+}
+
+
+
+
+.hero-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  font-family: 'Arial', sans-serif;
+}
+
+.hero-background,
+.hero-background-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.hero-background {
+  object-fit: cover;
+}
+
+.hero-background-image {
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+.hero-overlay {
+  position: relative;
+  z-index: 1;
+  color: white;
+  text-align: center;
+  padding-top: 25vh;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+  user-select: none;
+}
+
+.hero-title {
+  font-size: 2.5rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 6rem;
+  margin-bottom: 0.5rem; /* optional for some spacing */
+}
+
+.hero-subtitle {
+  font-size: 1.2rem;
+  font-weight: 300;
+  margin-top: 0.2rem; /* small gap between title and subtitle */
+}
+
+
+
+/* ===== SEARCH BAR ===== */
+.search-bar-container {
+  background: white;
+  padding: 1rem 1rem;
+  border-radius: 50px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.589);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  max-width: 450px; 
+  margin: -3rem auto 0; /* float between Hero and Destination */
+  position: relative;
+  z-index: 10;
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border-radius: 50px;
+  background: #f5f5f5;
+}
+
+.search-button,
+.map-button {
+  background-color: var(--highlight-color);
+  border: none;
+  padding: 0.75rem;
+  border-radius: 50%;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.search-button:hover,
+.map-button:hover {
+  background-color: var(--text-color);
+}
+
+/* ===== Expore or Top Destinations ===== */
+
+.carousel-section {
+  text-align: center;
+  padding: 2rem;
+  background: #f2f2f2;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.subtitle {
+  color: #666;
+  margin-bottom: 2rem;
+}
+
+.card {
+  position: relative;
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  transition: transform 0.3s ease;
+  max-width: 500px;
+  height: 330px;
+  margin: 0 auto;
+}
+
+.destination-swiper .swiper-slide-active .card {
+  height: 350px;
+}
+
+.card-image-wrapper {
+  width: 100%;
+  height: 200px; /* fixed height for all cards */
+  overflow: hidden;
+  border-bottom: 1px solid #eee;
+  border-radius: 16px 16px 0 0;
+}
+
+.destination-swiper .swiper-slide-active .card-image-wrapper {
+  height: 220px; /* taller for active slide */
+}
+
+.card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease, opacity 0.4s ease;
+}
+
+.card-image-wrapper:hover .card-image {
+  transform: scale(0.95);
+  opacity: 0.9;
+}
+
+.destination-swiper .swiper-slide-active .card-image {
+  height: 220px; /* Taller image for center card */
+}
+
+.city-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background-color: #022349;
+  color: white;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 6px;
+  z-index: 1;
+}
+
+.card-info {
+  padding: 1rem;
+  text-align: left;
+}
+
+.card-info h3 {
+  margin: 0;
+  font-size: 14px;
+  color: #222;
+}
+
+.card-info p {
+  margin: 0.3rem 0 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.view-button-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 1rem 0 1.5rem;
+}
+
+.view-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background-color: #033859;
+  color: white;
+  padding: 0.5rem 4rem;
+  border: none;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.view-button:hover {
+  background-color: rgba(0, 61, 128, 0.9);
+}
+
+.view-button svg {
+  width: 14px;
+  height: 14px;
+}
+
+.view-all-wrapper {
+  margin-top: 50px;
+}
+
+.view-all-button {
+  background-color: #f44;
+  color: white;
+  border: none;
+  padding: 0.4rem 1.5rem;
+  border-radius: 999px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.view-all-button:hover {
+  background-color: #d33;
+}
+
+.explore-wishlist-icon {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+  border-radius: 50%;
+  padding: 6px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.explore-wishlist-icon svg {
+  fill: white;       /* default: white heart */
+  stroke: white;     /* outline in white */
+  transition: fill 0.3s ease;
+}
+
+.explore-wishlist-icon.active svg {
+  fill: #f44;         /* red when active */
+  stroke: #f44;
+}
+
+.explore-wishlist-icon:hover {
+  transform: scale(1.1);
+}
+
+
+
+.destination-swiper {
+  overflow: visible !important;
+  padding: 0 1rem;
+  position: relative;
+}
+
+/* 🔥 REMOVE justify-content & align-items from swiper-wrapper */
+.destination-swiper .swiper-wrapper {
+  display: flex;
+}
+
+/* Base slide */
+.destination-swiper .swiper-slide {
+  transform: scale(0.75);
+  opacity: 0.4;
+  transition: transform 0.4s ease, opacity 0.4s ease;
+  overflow: visible;
+  display: flex;
+  justify-content: center;
+
+  /* Add pointer cursor on slides */
+  cursor: pointer;
+}
+
+/* Side slides */
+.destination-swiper .swiper-slide-prev,
+.destination-swiper .swiper-slide-next,
+.destination-swiper .swiper-slide-visible {
+  transform: scale(0.85);
+  opacity: 0.6;
+}
+
+/* Center slide */
+.destination-swiper .swiper-slide-active {
+  transform: scale(1.15);
+  opacity: 1;
+  z-index: 3;
+
+  /* Also add pointer cursor to active slide */
+  cursor: pointer;
+}
+
+
+/* Highlight Events Section */
+.highlight-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 40px;
+  font-family: 'Segoe UI', sans-serif;
+  gap: 40px;
+  margin-left: 100px;
+  flex-wrap: wrap;
+  
+}
+
+.highlight-text {
+  max-width: 30%;
+  flex: 1;
+  min-width: 250px;
+}
+
+.highlight-text h2 {
+  color: #F25749;
+  margin-bottom: 10px;
+  font-size: 32px;
+}
+
+.highlight-title {
+  font-weight: bold;
+}
+
+.highlight-text p {
+  margin: 5px 0;
+  font-size: 16px;
+  color: #444;
+}
+
+.date-range {
+  font-weight: bold;
+  color: #333;
+  margin-top: 10px;
+}
+
+.view-more {
+  display: inline-block;
+  margin-top: 20px;
+  padding: 10px 24px;
+  background-color: #F25749;
+  border: none;
+  border-radius: 999px;
+  color: white;
+  font-weight: bold;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.view-more:hover {
+  background-color: #033859;
+  transform: translateY(-2px);
+}
+
+.highlight-carousel {
+  position: relative;
+  flex: 2;
+  width: 100%;
+  max-width: 700px;
+  margin-right: 50px;
+}
+
+.highlight-swiper {
+  width: 100%;
+  height: 400px;
+  transition: transform 0.6s ease-in-out;
+}
+
+.highlight-swiper img {
+  width: 100%;
+  height: 70%;
+  object-fit: cover;
+  border-radius: 15px;
+  border: 3px solid #F25749;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+  margin: 60px 0 0 10px;
+}
+
+.swiper-slide-active img {
+  transform: scale(1.05);
+  box-shadow: 0 15px 25px rgba(0, 0, 0, 0.3);
+}
+.arrow {
+  position: absolute;
+  right: -60px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 48px;
+  background-color: transparent;
+  border: 2px solid #F25749;
+  border-radius: 50%;
+  color: #F25749;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  z-index: 10;
+}
+
+.arrow:hover {
+  background-color: #F25749;
+  color: white;
+}
+
+
+/* Responsive Tweaks */
+@media (max-width: 1024px) {
+  .highlight-container {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-left: 40px;
+  }
+
+  .highlight-text {
+    max-width: 100%;
+  }
+
+  .highlight-carousel {
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .arrow {
+    right: 0;
+    top: auto;
+    bottom: -50px;
+    transform: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .highlight-swiper {
+    height: 300px;
+  }
+
+  .highlight-swiper img {
+    height: 80%;
+  }
+
+  .arrow {
+    font-size: 24px;
+    padding: 8px 12px;
+  }
+}
+
+
+.experience-container {
+  padding: 80px 200px;
+  max-width: 100%;
+  margin: 0 auto;
+  background: #f2f2f2;
+}
+
+.experience-title {
+  font-size: 32px;
+  font-weight: bold;
+  color: #022349;
+  text-align: left;
+}
+
+.experience-grid {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+}
+
+.left-side, .right-side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+
+.large-card {
+  height: 300px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  position: relative;
+  cursor: pointer;
+}
+
+.small-cards-row {
+  display: flex;
+  gap: 16px;
+}
+
+.small-card {
+  flex: 1;
+  height: 160px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  position: relative;
+  cursor: pointer;
+}
+
+.large-card img, .small-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.large-card:hover img, .small-card:hover img {
+  transform: scale(1.1);
+}
+
+.card-label {
+  position: absolute;
+  bottom: 12px;
+  left: 16px;
+  color: white;
+  font-weight: bold;
+  font-size: 18px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+/* Responsive tweaks */
+@media (max-width: 768px) {
+  .experience-grid {
+    flex-direction: column;
+  }
+  .left-side, .right-side {
+    flex-direction: row;
+  }
+  .large-card {
+    flex: 2;
+    height: 240px;
+  }
+  .small-cards-row {
+    flex-direction: column;
+  }
+  .small-card {
+    height: 120px;
+  }
+}
+
+
+
+
+
+
+.footer {
+  background-color: #F2F2F2;
+  color: #033859;
+  padding: 20px 0;
+  text-align: center;
+  font-size: 14px;
+}
+
+.footer-content {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.footer-links {
+  margin-top: 10px;
+}
+
+.footer-links a {
+  color: #033859;
+  margin: 0 10px;
+  text-decoration: none;
+}
+
+.footer-links a:hover {
+  color: #033859;
+  text-decoration: underline;
+}
+
+.social-icons {
+  margin-top: 15px;
+}
+
+.social-icons a {
+  margin: 0 10px;
+  color: #033859;
+  transition: color 0.3s ease;
+}
+
+.social-icons a:hover {
+  color: #F25749;
+}
