@@ -1,0 +1,178 @@
+/* Root container */
+.admins-page-container {
+  padding: 20px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.admins-page-title {
+  margin-bottom: 16px;
+  font-size: 1.6rem;
+  font-weight: 600;
+}
+
+.admins-page-error {
+  color: #d32f2f;
+  margin-bottom: 12px;
+}
+
+.admins-page-add-btn {
+  margin-bottom: 12px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+
+.admins-page-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 12px;
+}
+
+.admins-page-table th,
+.admins-page-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #ddd;
+}
+
+.admins-page-row {
+  cursor: pointer;
+}
+
+.admins-page-row:hover {
+  background-color: #f5f5f5;
+}
+
+.admins-page-pagination {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.admins-page-page-btn {
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background: #fff;
+  cursor: pointer;
+}
+
+.admins-page-page-btn-active {
+  background: #333;
+  color: #fff;
+}
+
+/* Modals */
+.admins-page-modal-overlay,
+.admin-approval-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.admins-page-modal-form,
+.admin-approval-modal {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px 24px;
+  max-width: 700px;
+  width: 100%;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+/* Shared form elements */
+.admins-page-form-group {
+  margin-bottom: 10px;
+}
+
+.admins-page-form-group input {
+  width: 100%;
+  padding: 6px 8px;
+  margin-top: 4px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.admins-page-profile-large {
+  width: 160px;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.admins-page-button-group {
+  margin-top: 16px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.admins-page-button-group button {
+  padding: 7px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+
+.admins-page-delete-btn {
+  background: #d32f2f;
+  color: #fff;
+}
+
+.admins-page-cancel-btn {
+  background: #9e9e9e;
+  color: #fff;
+}
+
+.admins-page-note {
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+  color: #555;
+}
+
+/* Approval modal specific */
+.admin-approval-modal h3 {
+  margin-bottom: 12px;
+}
+
+.admin-approval-text {
+  margin-bottom: 12px;
+}
+
+.admin-approval-details p {
+  margin: 2px 0;
+}
+
+.admin-approval-note {
+  margin-top: 12px;
+  font-size: 0.9rem;
+  color: #444;
+}
+
+.admin-approval-buttons {
+  margin-top: 16px;
+  display: flex;
+  gap: 10px;
+}
+
+.admin-approval-confirm-btn {
+  background: #2e7d32;
+  color: #fff;
+  padding: 7px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+
+.admin-approval-cancel-btn {
+  background: #9e9e9e;
+  color: #fff;
+  padding: 7px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}

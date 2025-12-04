@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -36,25 +36,44 @@ export default function Login() {
   const [forgotConfirmPassword, setForgotConfirmPassword] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
 
-  // Reset password field visibility
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
   const [passwordStrength, setPasswordStrength] = useState(0);
 
   const navigate = useNavigate();
 
-  const handleNewPasswordChange = (value) => {
-    setForgotNewPassword(value);
-    setPasswordStrength(getPasswordStrength(value));
-  };
+  // ================================================
+  // AUTO-REDIRECT IF ALREADY LOGGED IN
+  // ================================================
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const storedUser = localStorage.getItem("user");
+
+    if (token && storedUser) {
+      try {
+        const user = JSON.parse(storedUser);
+
+        toast.info("You are already logged in.");
+
+        if (user.role === "admin") {
+          navigate("/admin");
+        } else {
+          navigate("/");
+        }
+      } catch (err) {
+        console.error("Failed to parse stored user:", err);
+      }
+    }
+  }, []);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     setError("");
   };
 
-  // ---------------- LOGIN ----------------
+  // ================================================
+  // LOGIN
+  // ================================================
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -92,7 +111,9 @@ export default function Login() {
     }
   };
 
-  // ---------------- REQUEST OTP ----------------
+  // ================================================
+  // REQUEST OTP
+  // ================================================
   const handleForgotRequestOtp = async (e) => {
     e.preventDefault();
 
@@ -117,7 +138,9 @@ export default function Login() {
     }
   };
 
-  // ---------------- VERIFY OTP ----------------
+  // ================================================
+  // VERIFY OTP
+  // ================================================
   const handleForgotVerifyOtp = async (e) => {
     e.preventDefault();
 
@@ -146,7 +169,9 @@ export default function Login() {
     }
   };
 
-  // ---------------- RESET PASSWORD ----------------
+  // ================================================
+  // RESET PASSWORD
+  // ================================================
   const handleForgotResetPassword = async (e) => {
     e.preventDefault();
 
@@ -178,7 +203,6 @@ export default function Login() {
     }
   };
 
-  // ---------------- CLOSE MODAL ----------------
   const closeForgotModal = () => {
     setShowForgotModal(false);
     setForgotStep(1);
@@ -192,6 +216,9 @@ export default function Login() {
     <div className="login-form-container-unique">
       <h2 className="login-title-unique">Login</h2>
 
+      {/* ===========================
+          MAIN LOGIN FORM
+      =========================== */}
       <form onSubmit={handleSubmit}>
         {/* EMAIL/USERNAME */}
         <div className="login-input-wrapper-unique">
@@ -217,6 +244,7 @@ export default function Login() {
             onChange={handleChange}
             className="login-input-unique login-input-with-icon-unique"
           />
+
           <span
             className="login-password-eye-unique"
             onClick={() => setShowPassword((p) => !p)}
@@ -229,12 +257,11 @@ export default function Login() {
           </span>
         </div>
 
-        {/* FORGOT PASSWORD */}
         <div className="login-forgot-link-unique">
           <button
             type="button"
-            onClick={() => setShowForgotModal(true)}
             className="login-forgot-btn-unique"
+            onClick={() => setShowForgotModal(true)}
           >
             Forgot Password?
           </button>
@@ -244,25 +271,27 @@ export default function Login() {
           Login
         </button>
 
-        {error && (
-          <div className="login-error-message-unique">{error}</div>
-        )}
+        {error && <div className="login-error-message-unique">{error}</div>}
       </form>
 
       <div className="login-register-link-unique">
-        Don't have an account?{" "}
+        Don’t have an account?{" "}
         <Link to="/register" className="login-register-anchor-unique">
           Register here
         </Link>
       </div>
 
-      {/* ------------- FORGOT PASSWORD MODAL ------------- */}
+      {/* ================================================
+          FORGOT PASSWORD MODAL
+      ================================================ */}
       {showForgotModal && (
         <div className="login-modal-overlay-unique">
           <div className="login-forgot-modal-unique">
             <h3>Password Reset</h3>
 
-            {/* STEP 1: Request OTP */}
+            {/* ==================
+                STEP 1 — REQUEST OTP
+            ================== */}
             {forgotStep === 1 && (
               <form onSubmit={handleForgotRequestOtp}>
                 <p>Enter your email or username.</p>
@@ -271,9 +300,7 @@ export default function Login() {
                   className="login-input-unique"
                   placeholder="Email or Username"
                   value={forgotIdentifier}
-                  onChange={(e) =>
-                    setForgotIdentifier(e.target.value)
-                  }
+                  onChange={(e) => setForgotIdentifier(e.target.value)}
                 />
                 <button
                   type="submit"
@@ -285,7 +312,9 @@ export default function Login() {
               </form>
             )}
 
-            {/* STEP 2: OTP */}
+            {/* ==================
+                STEP 2 — VERIFY OTP
+            ================== */}
             {forgotStep === 2 && (
               <form onSubmit={handleForgotVerifyOtp}>
                 <p>Enter the OTP sent to your email.</p>
@@ -306,29 +335,27 @@ export default function Login() {
               </form>
             )}
 
-            {/* STEP 3: Reset Password */}
+            {/* ==================
+                STEP 3 — RESET PASSWORD
+            ================== */}
             {forgotStep === 3 && (
               <form onSubmit={handleForgotResetPassword}>
                 <p>Create your new password.</p>
 
-                {/* NEW PASSWORD */}
+                {/* PASSWORD INPUT */}
                 <div className="login-input-wrapper-unique">
                   <RiLockPasswordFill className="login-input-icon-unique" />
                   <input
                     type={showNewPassword ? "text" : "password"}
                     placeholder="New Password"
                     value={forgotNewPassword}
-                    onChange={(e) =>
-                      handleNewPasswordChange(e.target.value)
-                    }
+                    onChange={(e) => handleNewPasswordChange(e.target.value)}
                     className="login-input-unique login-input-with-icon-unique"
                     required
                   />
                   <span
                     className="login-password-eye-unique"
-                    onClick={() =>
-                      setShowNewPassword((prev) => !prev)
-                    }
+                    onClick={() => setShowNewPassword((p) => !p)}
                   >
                     {showNewPassword ? (
                       <AiOutlineEyeInvisible size={20} />
@@ -340,56 +367,24 @@ export default function Login() {
 
                 {/* PASSWORD CHECKLIST */}
                 <div className="password-requirements-unique">
-                  <div
-                    className={
-                      forgotNewPassword.length >= 8
-                        ? "req ok"
-                        : "req"
-                    }
-                  >
-                    {forgotNewPassword.length >= 8 ? "✓" : "✗"} Minimum 8
-                    characters
+                  <div className={forgotNewPassword.length >= 8 ? "req ok" : "req"}>
+                    {forgotNewPassword.length >= 8 ? "✓" : "✗"} Minimum 8 characters
                   </div>
 
-                  <div
-                    className={
-                      /[A-Z]/.test(forgotNewPassword)
-                        ? "req ok"
-                        : "req"
-                    }
-                  >
-                    {/[A-Z]/.test(forgotNewPassword) ? "✓" : "✗"} 1
-                    Uppercase letter
+                  <div className={/[A-Z]/.test(forgotNewPassword) ? "req ok" : "req"}>
+                    {/[A-Z]/.test(forgotNewPassword) ? "✓" : "✗"} 1 Uppercase letter
                   </div>
 
-                  <div
-                    className={
-                      /[a-z]/.test(forgotNewPassword)
-                        ? "req ok"
-                        : "req"
-                    }
-                  >
-                    {/[a-z]/.test(forgotNewPassword) ? "✓" : "✗"} 1
-                    Lowercase letter
+                  <div className={/[a-z]/.test(forgotNewPassword) ? "req ok" : "req"}>
+                    {/[a-z]/.test(forgotNewPassword) ? "✓" : "✗"} 1 Lowercase letter
                   </div>
 
-                  <div
-                    className={
-                      /\d/.test(forgotNewPassword) ? "req ok" : "req"
-                    }
-                  >
+                  <div className={/\d/.test(forgotNewPassword) ? "req ok" : "req"}>
                     {/\d/.test(forgotNewPassword) ? "✓" : "✗"} 1 Number
                   </div>
 
-                  <div
-                    className={
-                      /[\W_]/.test(forgotNewPassword)
-                        ? "req ok"
-                        : "req"
-                    }
-                  >
-                    {/[\W_]/.test(forgotNewPassword) ? "✓" : "✗"} 1 Special
-                    character
+                  <div className={/[\W_]/.test(forgotNewPassword) ? "req ok" : "req"}>
+                    {/[\W_]/.test(forgotNewPassword) ? "✓" : "✗"} 1 Special character
                   </div>
                 </div>
 
@@ -414,22 +409,16 @@ export default function Login() {
                 <div className="login-input-wrapper-unique">
                   <RiLockPasswordFill className="login-input-icon-unique" />
                   <input
-                    type={
-                      showConfirmPassword ? "text" : "password"
-                    }
+                    type={showConfirmPassword ? "text" : "password"}
                     placeholder="Confirm New Password"
                     value={forgotConfirmPassword}
-                    onChange={(e) =>
-                      setForgotConfirmPassword(e.target.value)
-                    }
+                    onChange={(e) => setForgotConfirmPassword(e.target.value)}
                     className="login-input-unique login-input-with-icon-unique"
                     required
                   />
                   <span
                     className="login-password-eye-unique"
-                    onClick={() =>
-                      setShowConfirmPassword((p) => !p)
-                    }
+                    onClick={() => setShowConfirmPassword((p) => !p)}
                   >
                     {showConfirmPassword ? (
                       <AiOutlineEyeInvisible size={20} />
@@ -449,10 +438,7 @@ export default function Login() {
               </form>
             )}
 
-            <button
-              className="login-modal-close-btn-unique"
-              onClick={closeForgotModal}
-            >
+            <button className="login-modal-close-btn-unique" onClick={closeForgotModal}>
               Close
             </button>
           </div>
