@@ -6,27 +6,24 @@ const path = require("path");
 const fs = require("fs");
 
 // ---------------------------------------------
-// Load .env only in LOCAL development
+// LOAD ENV (Local Only)
 // ---------------------------------------------
 if (!process.env.RAILWAY_ENVIRONMENT) {
   dotenv.config({ path: path.join(__dirname, ".env") });
-  console.log("ℹ️ Running in LOCAL mode (dotenv enabled)");
+  console.log("ℹ️ ENV loaded (LOCAL mode)");
 } else {
-  console.log("ℹ️ Running on RAILWAY (dotenv disabled, env vars auto-loaded)");
+  console.log("ℹ️ Railway environment detected — .env ignored");
 }
 
 // ---------------------------------------------
-// MySQL Database Initialization
-// ---------------------------------------------
-const { getPool } = require("./config/db");
-
-// ---------------------------------------------
-// EXPRESS APP INIT
+// INIT EXPRESS
 // ---------------------------------------------
 const app = express();
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // ---------------------------------------------
-// CORS FIX — Allows Localhost + Railway Frontend
+// CORS CONFIG (Auto detects allowed origins)
 // ---------------------------------------------
 const allowedOrigins = [
   "http://localhost:5173",
@@ -35,71 +32,62 @@ const allowedOrigins = [
   "http://127.0.0.1:5174",
   process.env.FRONTEND_URL,
   process.env.RAILWAY_PUBLIC_DOMAIN,
-];
+].filter(Boolean); // remove undefined
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin) return callback(null, true); // allow mobile apps, curl
-      if (allowedOrigins.includes(origin)) return callback(null, true);
-
+      if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
       console.warn("❌ CORS blocked:", origin);
-      return callback(new Error("Not allowed by CORS: " + origin));
+      callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
   })
 );
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
 // ---------------------------------------------
-// Simple request logger
+// REQUEST LOGGER (Production Friendly)
 // ---------------------------------------------
 app.use((req, res, next) => {
-  console.info(
-    `${new Date().toISOString()} - ${req.method} ${req.originalUrl}`
-  );
+  console.log(`[${req.method}] ${req.originalUrl}`);
   next();
 });
 
 // ---------------------------------------------
-// Connect to MySQL (Railway or Local)
+// DATABASE INIT — WAIT FOR CONNECTION BEFORE SERVER STARTS
 // ---------------------------------------------
-(async () => {
+const { getPool } = require("./config/db");
+
+async function initDatabase() {
   try {
-    await getPool();
-    console.log("✅ Connected to MySQL successfully!");
+    const pool = await getPool();
+    await pool.query("SELECT 1");
+    console.log("✅ MySQL connection established");
   } catch (err) {
-    console.error("❌ Failed to connect to MySQL:", err.message);
+    console.error("❌ Database connection FAILED:", err.message);
   }
-})();
+}
 
 // ---------------------------------------------
-// UPLOADS STATIC FOLDER
+// STATIC UPLOADS (Safe for Railway + Local)
 // ---------------------------------------------
-const possibleUploadLocations = [
-  path.join(__dirname, "uploads"), // backend/uploads
-  path.join(process.cwd(), "uploads"), // fallback (Railway-safe)
+const uploadPaths = [
+  path.join(__dirname, "uploads"),
+  path.join(process.cwd(), "uploads"),
 ];
 
-let uploadsFolder = possibleUploadLocations.find((folder) => {
+let uploadsFolder = uploadPaths.find((dir) => {
   try {
-    return fs.existsSync(folder) && fs.statSync(folder).isDirectory();
-  } catch (_) {
+    return fs.existsSync(dir);
+  } catch {
     return false;
   }
 });
 
-// Create if missing (local)
 if (!uploadsFolder) {
-  uploadsFolder = path.join(__dirname, "uploads");
-  try {
-    fs.mkdirSync(uploadsFolder, { recursive: true });
-    console.log("📁 Created uploads folder:", uploadsFolder);
-  } catch (err) {
-    console.warn("⚠️ Could NOT create uploads folder:", err.message);
-  }
+  uploadsFolder = uploadPaths[0];
+  fs.mkdirSync(uploadsFolder, { recursive: true });
+  console.log("📁 Uploads folder created:", uploadsFolder);
 } else {
   console.log("📁 Serving uploads from:", uploadsFolder);
 }
@@ -107,110 +95,77 @@ if (!uploadsFolder) {
 app.use(
   "/uploads",
   express.static(uploadsFolder, {
-    extensions: ["jpg", "jpeg", "png", "webp", "gif", "mp4"],
-    setHeaders: (res) => {
-      res.setHeader("Cache-Control", "public, max-age=3600");
-    },
+    setHeaders: (res) =>
+      res.setHeader("Cache-Control", "public, max-age=3600"),
   })
 );
 
 // ---------------------------------------------
-// DEBUG ROUTES (Local Only)
+// SAFE SERVICE LOADER (Prevents full API crash)
 // ---------------------------------------------
-if (!process.env.RAILWAY_ENVIRONMENT) {
-  app.get("/debug/list-uploads", (req, res) => {
-    const files = fs.readdirSync(uploadsFolder);
-    res.json({ uploadsFolder, files });
-  });
-
-  app.get("/debug/check-file", (req, res) => {
-    const p = req.query.path;
-    if (!p) return res.status(400).json({ error: "Missing ?path" });
-
-    const safePath = path.normalize(p).replace(/^(\.\.(\/|\\|$))+/, "");
-    const fullPath = path.join(uploadsFolder, safePath);
-    const exists = fs.existsSync(fullPath);
-
-    res.json({ ok: true, fullPath, exists });
-  });
+function loadService(name, mountPath, loaderFn) {
+  try {
+    const routes = loaderFn();
+    app.use(mountPath, routes);
+    console.log(`✅ ${name} loaded at ${mountPath}`);
+  } catch (err) {
+    console.warn(`⚠️ ${name} FAILED to load:`, err.message);
+  }
 }
 
 // ---------------------------------------------
-// ROUTES
+// LOAD SERVICES (Fault-Tolerant)
 // ---------------------------------------------
-try {
-  const adminRoutes = require("./admin-service/routes/adminRoutes");
-  const userRoutes = require("./admin-service/routes/userRoutes");
-  app.use("/api/admin", adminRoutes);
-  app.use("/api/admin/users", userRoutes);
-  console.log("✅ Admin service loaded");
-} catch (err) {
-  console.warn("⚠️ Admin service failed:", err.message);
-}
+loadService("Admin Service", "/api/admin", () =>
+  require("./admin-service/routes/adminRoutes")
+);
 
-try {
-  const experienceRoutes = require("./cms-service/routes/experience");
-  const exploreCMSRoutes = require("./cms-service/routes/explorecms");
-  const heroCMSRoutes = require("./cms-service/routes/herocms");
-  const highlightCMSRoutes = require("./cms-service/routes/highlightcms");
-  const navbarRoutes = require("./cms-service/routes/navbar");
+loadService("Admin User Service", "/api/admin/users", () =>
+  require("./admin-service/routes/userRoutes")
+);
 
-  app.use("/api/cms/experience", experienceRoutes);
-  app.use("/api/cms/explore", exploreCMSRoutes);
-  app.use("/api/cms/hero", heroCMSRoutes);
-  app.use("/api/cms/highlight", highlightCMSRoutes);
-  app.use("/api/cms/navbar", navbarRoutes);
-  console.log("✅ CMS service loaded");
-} catch (err) {
-  console.warn("⚠️ CMS service failed:", err.message);
-}
+loadService("CMS Experience", "/api/cms/experience", () =>
+  require("./cms-service/routes/experience")
+);
 
-try {
-  const destinationRoutes = require("./destination-service/routes/destinations");
-  app.use("/api/destinations", destinationRoutes);
-  console.log("✅ Destination service loaded");
-} catch (err) {
-  console.warn("⚠️ Destination service failed:", err.message);
-}
+loadService("CMS Explore", "/api/cms/explore", () =>
+  require("./cms-service/routes/explorecms")
+);
 
-try {
-  const mapRoutes = require("./map-service/routes/touristSpots");
-  app.use("/map/touristspots", mapRoutes);
-  console.log("✅ Map service loaded");
-} catch (err) {
-  console.warn("⚠️ Map service failed:", err.message);
-}
+loadService("CMS Hero", "/api/cms/hero", () =>
+  require("./cms-service/routes/herocms")
+);
 
-try {
-  const searchRoutes = require("./searchFiltering-service/routes/search");
-  app.use("/api/search", searchRoutes);
-  console.log("✅ Search service loaded");
-} catch (err) {
-  console.warn("⚠️ Search service failed:", err.message);
-}
+loadService("CMS Highlights", "/api/cms/highlight", () =>
+  require("./cms-service/routes/highlightcms")
+);
 
-try {
-  const authRoutes = require("./user-service/routes/auth");
-  const wishlistRoutes = require("./user-service/routes/wishlist");
-  app.use("/api/user", authRoutes);
-  app.use("/api/user/wishlist", wishlistRoutes);
-  console.log("✅ User service loaded");
-} catch (err) {
-  console.warn("⚠️ User service failed:", err.message);
-}
+loadService("CMS Navbar", "/api/cms/navbar", () =>
+  require("./cms-service/routes/navbar")
+);
+
+loadService("Destinations Service", "/api/destinations", () =>
+  require("./destination-service/routes/destinations")
+);
+
+loadService("Map Service", "/map/touristspots", () =>
+  require("./map-service/routes/touristSpots")
+);
+
+loadService("Search Service", "/api/search", () =>
+  require("./searchFiltering-service/routes/search")
+);
+
+loadService("Auth Service", "/api/user", () =>
+  require("./user-service/routes/auth")
+);
+
+loadService("Wishlist Service", "/api/user/wishlist", () =>
+  require("./user-service/routes/wishlist")
+);
 
 // ---------------------------------------------
-// ROOT ENDPOINT
-// ---------------------------------------------
-app.get("/", (req, res) => {
-  res.json({
-    message: "🚀 Discover Mansalay Backend is running",
-    mode: process.env.RAILWAY_ENVIRONMENT ? "Railway" : "Local",
-  });
-});
-
-// ---------------------------------------------
-// HEALTH CHECK
+// HEALTH CHECK (Railway Requirement)
 // ---------------------------------------------
 app.get("/api/health", async (req, res) => {
   try {
@@ -218,29 +173,53 @@ app.get("/api/health", async (req, res) => {
     await pool.query("SELECT 1");
     res.json({ status: "ok", db: "connected" });
   } catch (err) {
-    res.status(500).json({ status: "error", db: "failed", message: err.message });
+    res.status(500).json({ status: "error", db: "failed" });
   }
 });
 
 // ---------------------------------------------
-// 404 Handler
+// ROOT ENDPOINT
+// ---------------------------------------------
+app.get("/", (req, res) => {
+  res.json({
+    message: "🚀 Discover Mansalay Backend Running",
+    environment: process.env.RAILWAY_ENVIRONMENT ? "Railway" : "Local",
+  });
+});
+
+// ---------------------------------------------
+// 404 HANDLER
 // ---------------------------------------------
 app.use((req, res) => {
-  res.status(404).json({ ok: false, error: "Not Found", path: req.originalUrl });
+  res.status(404).json({
+    ok: false,
+    error: "Route Not Found",
+    path: req.originalUrl,
+  });
 });
 
 // ---------------------------------------------
-// ERROR Handler
+// GLOBAL ERROR HANDLER
 // ---------------------------------------------
 app.use((err, req, res, next) => {
-  console.error("Server error:", err);
-  res.status(500).json({ ok: false, error: err.message });
+  console.error("🔥 SERVER ERROR:", err);
+  res.status(500).json({
+    ok: false,
+    error: "Internal Server Error",
+    message: err.message,
+  });
 });
 
 // ---------------------------------------------
-// START SERVER
+// START SERVER (After DB Initializes)
 // ---------------------------------------------
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🌐 Server running on port ${PORT}`);
-});
+async function startServer() {
+  await initDatabase(); // Ensures DB connection success/failure is logged
+
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`🌐 Server running on port ${PORT}`);
+  });
+}
+
+startServer();
