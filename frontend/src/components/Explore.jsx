@@ -18,6 +18,7 @@ export default function Explore() {
   const user = JSON.parse(localStorage.getItem('user'));
   const username = user?.username;
 
+  // Fetch destinations
   useEffect(() => {
     fetch(`${API_BASE}/api/cms/explore`)
       .then(res => res.json())
@@ -28,8 +29,10 @@ export default function Explore() {
       });
   }, [API_BASE]);
 
+  // Load wishlist
   useEffect(() => {
     if (!username) return;
+
     fetch(`${API_BASE}/api/user/wishlist/${username}`)
       .then(res => res.json())
       .then(data => dispatch({ type: 'SET_ITEMS', payload: data }))
@@ -39,21 +42,25 @@ export default function Explore() {
       });
   }, [API_BASE, username, dispatch]);
 
-  const isInWishlist = (itemId) => wishlist.some(item => item.item_id === itemId);
+  const isInWishlist = (itemId) =>
+    wishlist.some((item) => item.item_id === itemId);
 
   const toggleWishlist = async (place) => {
     if (!username) return toast.info('Please log in to use wishlist.');
+
     const item = {
       username,
       item_id: place.id,
       name: place.title,
       category: place.city,
-      image_path: place.image_path,
+      image_path: place.media_path,
     };
 
     try {
       if (isInWishlist(place.id)) {
-        await fetch(`${API_BASE}/api/user/wishlist/${username}/${place.id}`, { method: 'DELETE' });
+        await fetch(`${API_BASE}/api/user/wishlist/${username}/${place.id}`, {
+          method: 'DELETE',
+        });
         dispatch({ type: 'REMOVE_ITEM', payload: place.id });
         toast.success('Removed from wishlist!');
       } else {
@@ -62,6 +69,7 @@ export default function Explore() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(item),
         });
+
         if (res.ok) {
           dispatch({ type: 'ADD_ITEM', payload: item });
           toast.success('Added to wishlist!');
@@ -96,14 +104,17 @@ export default function Explore() {
         className="destination-swiper"
       >
         {destinations.map((place) => {
-          const imageUrl = place.image_path
-            ? `${API_BASE}/uploads/top_destinations/${place.image_path}?t=${Date.now()}`
+          const imageUrl = place.media_path
+            ? `${API_BASE}/${place.media_path}?t=${Date.now()}`
             : 'https://via.placeholder.com/200x150?text=No+Image';
+
           return (
             <SwiperSlide key={place.id}>
               <div className="card">
                 <div
-                  className={`explore-wishlist-icon ${isInWishlist(place.id) ? 'active' : ''}`}
+                  className={`explore-wishlist-icon ${
+                    isInWishlist(place.id) ? 'active' : ''
+                  }`}
                   onClick={() => toggleWishlist(place)}
                   title={isInWishlist(place.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}
                 >

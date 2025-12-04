@@ -19,8 +19,9 @@ import About from './pages/navbar/About';
 import Wishlist from './pages/Wishlist';
 import WishlistContext, { WishlistProvider } from './contexts/WishlistContext';
 import MapPage from './pages/MapPage';
-
 import Search from './pages/SearchPage'; // 👈 new import
+import VerifyOtp from './pages/VerifyOtp';
+import Terms from './pages/Terms';
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/verify-otp" element={<VerifyOtp />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/cms" element={<CMSDashboard />} />
             <Route path="/destinations" element={<DestinationsPage />} />
@@ -45,6 +47,8 @@ function App() {
             <Route path="/wishlist" element={<Wishlist />} />
             <Route path="/map" element={<MapPage />} />
             <Route path="/search" element={<Search />} />
+            <Route path="/terms" element={<Terms />} />
+
 
           </Routes>
 

@@ -16,13 +16,13 @@ export default function ExploreCMS() {
     email: '',
     contact: '',
     image: null,
-    image_path: '',
+    media_path: '',
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [showForm, setShowForm] = useState(false);
 
-  // Fetch all destinations
+  // Fetch all top destinations
   useEffect(() => {
     fetchDestinations();
   }, []);
@@ -38,14 +38,17 @@ export default function ExploreCMS() {
     }
   };
 
-  // Handle form input changes
+  // Form input change handler
   const handleChange = (e) => {
     const { name, value, files } = e.target;
-    if (name === 'image') setForm(prev => ({ ...prev, image: files[0] }));
-    else setForm(prev => ({ ...prev, [name]: value }));
+    if (name === 'image') {
+      setForm((prev) => ({ ...prev, image: files[0] }));
+    } else {
+      setForm((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
-  // Handle edit button click
+  // Edit handler
   const handleEdit = (destination) => {
     setForm({
       id: destination.id,
@@ -54,15 +57,16 @@ export default function ExploreCMS() {
       email: destination.email || '',
       contact: destination.contact || '',
       image: null,
-      image_path: destination.image_path || '',
+      media_path: destination.media_path || '',
     });
     setShowForm(true);
     setMessage('');
   };
 
-  // Handle delete
+  // Delete handler
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this destination?')) return;
+
     try {
       const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Delete failed');
@@ -73,7 +77,7 @@ export default function ExploreCMS() {
     }
   };
 
-  // Handle form submit (Add/Edit)
+  // Add/Edit submit handler
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.title || !form.city) return toast.warn('Title and City are required');
@@ -96,7 +100,8 @@ export default function ExploreCMS() {
       if (!res.ok) throw new Error(data.message || 'Save failed');
 
       toast.success(isEdit ? 'Destination updated!' : 'Destination added!');
-      setForm({ id: null, title: '', city: '', email: '', contact: '', image: null, image_path: '' });
+
+      setForm({ id: null, title: '', city: '', email: '', contact: '', image: null, media_path: '' });
       setShowForm(false);
       fetchDestinations();
     } catch (err) {
@@ -106,41 +111,47 @@ export default function ExploreCMS() {
     }
   };
 
-  // Handle cancel button
+  // Cancel handler
   const handleCancel = () => {
-    setForm({ id: null, title: '', city: '', email: '', contact: '', image: null, image_path: '' });
+    setForm({ id: null, title: '', city: '', email: '', contact: '', image: null, media_path: '' });
     setShowForm(false);
     setMessage('');
   };
 
-  // Preview image
+  // Preview handler
   const getImagePreview = () => {
     if (form.image) return URL.createObjectURL(form.image);
-    if (form.image_path) return `${API_BASE}/uploads/top_destinations/${form.image_path}?t=${Date.now()}`;
+    if (form.media_path) return `${API_BASE}/${form.media_path}?t=${Date.now()}`;
     return PLACEHOLDER_IMAGE;
   };
 
   return (
     <div className="explorecms-container">
       <h2>Explore Destinations CMS</h2>
-      <button className="btn-add" onClick={() => setShowForm(true)}>Add Destination</button>
+
+      <button className="btn-add" onClick={() => setShowForm(true)}>
+        Add Destination
+      </button>
+
       {message && <p className="message">{message}</p>}
 
       <ul className="destinations-grid">
-        {destinations.map(dest => (
+        {destinations.map((dest) => (
           <li className="destination-card" key={dest.id}>
             <img
               className="destination-image"
-              src={dest.image_path ? `${API_BASE}/uploads/top_destinations/${dest.image_path}?t=${Date.now()}` : PLACEHOLDER_IMAGE}
-              alt={dest.title || 'No Title'}
+              src={dest.media_path ? `${API_BASE}/${dest.media_path}?t=${Date.now()}` : PLACEHOLDER_IMAGE}
+              alt={dest.title}
             />
+
             <div className="destination-text">
-              <strong>{dest.title || 'No Title'}</strong>
-              <p>City: {dest.city || 'Unknown City'}</p>
+              <strong>{dest.title}</strong>
+              <p>City: {dest.city}</p>
               {dest.email && <p>Email: {dest.email}</p>}
               {dest.contact && <p>Contact: {dest.contact}</p>}
               {!dest.email && !dest.contact && <p>No contact info</p>}
             </div>
+
             <div className="actions">
               <button className="btn-edit" onClick={() => handleEdit(dest)}>Edit</button>
               <button className="btn-delete" onClick={() => handleDelete(dest.id)}>Delete</button>
@@ -167,14 +178,18 @@ export default function ExploreCMS() {
               <label>Contact</label>
               <input type="text" name="contact" value={form.contact} onChange={handleChange} />
 
-              <label htmlFor="image-upload" className="custom-file-button">Choose Image</label>
+              <label htmlFor="image-upload" className="custom-file-button">
+                Choose Image
+              </label>
               <input type="file" id="image-upload" name="image" accept="image/*" onChange={handleChange} />
 
               <div className="form-buttons">
                 <button type="submit" disabled={loading}>
                   {loading ? 'Saving...' : form.id ? 'Update' : 'Add'}
                 </button>
-                <button type="button" className="btn-cancel" onClick={handleCancel}>Cancel</button>
+                <button type="button" className="btn-cancel" onClick={handleCancel}>
+                  Cancel
+                </button>
               </div>
             </form>
 

@@ -1,153 +1,202 @@
 // cms-service/routes/highlightcms.js
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const multer = require('multer');
-const path = require('path');
-const { getPool } = require('../../config/db');
-const fs = require('fs');
+const multer = require("multer");
+const path = require("path");
+const { getPool } = require("../../config/db");
+const crypto = require("crypto");
+const fs = require("fs");
 
-// Ensure uploads/highlightevents directory exists
-const uploadDir = path.join(__dirname, '../../uploads/highlightevents');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+// Upload directory
+const uploadDir = path.join(__dirname, "../../uploads/highlightevents");
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+// Generate SHA-256 hash for dedup
+function hashContent(data) {
+  return crypto.createHash("sha256").update(data).digest("hex");
 }
 
-// Sanitize title for filename
-function sanitizeTitle(title) {
-  return (title || 'untitled')
+// Sanitize filenames
+function sanitizeTitle(text) {
+  return text
     .toLowerCase()
     .trim()
-    .replace(/\s+/g, '-')         // replace spaces with dashes
-    .replace(/[^a-z0-9\-]/g, ''); // remove non-alphanumeric
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9\-]/g, "");
 }
 
-// Multer config
+// Multer storage setup
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
+  destination: (_, __, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => {
-    const title = req.body.title || 'untitled';
+    const safe = sanitizeTitle(req.body.title || "event");
     const ext = path.extname(file.originalname);
-    const filename = `${sanitizeTitle(title)}${ext}`;
-    cb(null, filename);
-  }
+    cb(null, `${safe}${ext}`);
+  },
 });
 const upload = multer({ storage });
 
-/**
- * ROOT
- * GET /api/cms/highlight
- * Returns a small informational payload so the mount root doesn't 404.
- * (This fixes "Cannot GET /api/cms/highlight")
- */
-router.get('/', (req, res) => {
-  return res.json({
+/* ---------------------------------------------------------
+ * GET ROOT MESSAGE
+ * --------------------------------------------------------- */
+router.get("/", (_, res) => {
+  res.json({
     ok: true,
-    message: 'Highlight CMS root — use /highlight-events to list events',
-    routes: ['/highlight-events', '/highlight-events/:id']
+    message: "Highlight CMS Root",
+    endpoints: [
+      "/highlight-events (GET, POST)",
+      "/highlight-events/:id (PUT, DELETE)",
+    ],
   });
 });
 
-// GET all events
-router.get('/highlight-events', async (req, res) => {
+/* ---------------------------------------------------------
+ * GET ALL HIGHLIGHT EVENTS
+ * --------------------------------------------------------- */
+router.get("/highlight-events", async (_, res) => {
   try {
     const pool = await getPool();
-    const [results] = await pool.query('SELECT * FROM highlight_events ORDER BY id DESC');
-    res.json(results);
-  } catch (err) {
-    console.error('[GET highlight-events ERROR]', err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// POST new event
-router.post('/highlight-events', upload.single('image'), async (req, res) => {
-  const { title, description, date_range, link } = req.body;
-  const image_url = req.file?.filename || '';
-
-  try {
-    const pool = await getPool();
-    const [result] = await pool.query(
-      'INSERT INTO highlight_events (title, description, date_range, image_url, link) VALUES (?, ?, ?, ?, ?)',
-      [title, description, date_range, image_url, link]
+    const [rows] = await pool.query(
+      "SELECT * FROM content_items WHERE source='highlight_event' ORDER BY id DESC"
     );
-    res.status(201).json({ message: 'Event created', id: result.insertId });
+    res.json(rows);
   } catch (err) {
-    console.error('[POST highlight-events ERROR]', err);
+    console.error("[GET highlight_events ERROR]", err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// PUT update event
-router.put('/highlight-events/:id', upload.single('image'), async (req, res) => {
-  const { id } = req.params;
+/* ---------------------------------------------------------
+ * CREATE HIGHLIGHT EVENT
+ * --------------------------------------------------------- */
+router.post("/highlight-events", upload.single("image"), async (req, res) => {
   const { title, description, date_range, link } = req.body;
-  const newImage = req.file?.filename;
+  const file = req.file;
+
+  if (!title || !description || !date_range)
+    return res.status(400).json({ error: "Missing required fields" });
+
+  const media_path = file
+    ? `uploads/highlightevents/${file.filename}`
+    : null;
+
+  const media_type = file?.mimetype.startsWith("video") ? "video" : "image";
+
+  const dedup_hash = hashContent(`${title}|${description}|${date_range}|${media_path}`);
 
   try {
     const pool = await getPool();
+    await pool.query(
+      `INSERT INTO content_items 
+      (source, title, description, category, media_type, media_path, link, dedup_hash) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "highlight_event",
+        title,
+        description,
+        date_range,
+        media_type,
+        media_path,
+        link || null,
+        dedup_hash,
+      ]
+    );
 
-    // Get existing image filename (safer destructuring)
-    const [rows] = await pool.query('SELECT image_url FROM highlight_events WHERE id=? LIMIT 1', [id]);
-    const event = rows && rows.length ? rows[0] : null;
-    const oldImage = event?.image_url;
-
-    let query = 'UPDATE highlight_events SET title=?, description=?, date_range=?, link=?';
-    const params = [title, description, date_range, link];
-
-    if (newImage) {
-      query += ', image_url=?';
-      params.push(newImage);
-
-      // Delete old image file (if it exists)
-      if (oldImage) {
-        const oldPath = path.join(uploadDir, oldImage);
-        if (fs.existsSync(oldPath)) {
-          fs.unlink(oldPath, err => {
-            if (err) console.error('[DELETE IMAGE ERROR]', err);
-          });
-        }
-      }
-    }
-
-    query += ' WHERE id=?';
-    params.push(id);
-
-    await pool.query(query, params);
-    res.json({ message: 'Event updated' });
+    res.status(201).json({ message: "Event created" });
   } catch (err) {
-    console.error('[PUT highlight-events ERROR]', err);
+    console.error("[POST highlight_event ERROR]", err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// DELETE event + file
-router.delete('/highlight-events/:id', async (req, res) => {
-  const { id } = req.params;
+/* ---------------------------------------------------------
+ * UPDATE EVENT
+ * --------------------------------------------------------- */
+router.put("/highlight-events/:id", upload.single("image"), async (req, res) => {
+  const id = req.params.id;
+  const { title, description, date_range, link } = req.body;
 
   try {
     const pool = await getPool();
 
-    // Get image filename
-    const [rows] = await pool.query('SELECT image_url FROM highlight_events WHERE id=? LIMIT 1', [id]);
-    const event = rows && rows.length ? rows[0] : null;
-    const imageFile = event?.image_url;
+    const [rows] = await pool.query(
+      "SELECT * FROM content_items WHERE id=? AND source='highlight_event'",
+      [id]
+    );
+    const event = rows[0];
+    if (!event)
+      return res.status(404).json({ error: "Event not found" });
 
-    // Delete from DB
-    await pool.query('DELETE FROM highlight_events WHERE id=?', [id]);
+    let media_path = event.media_path;
+    let media_type = event.media_type;
 
-    // Delete file from disk
-    if (imageFile) {
-      const filePath = path.join(uploadDir, imageFile);
-      if (fs.existsSync(filePath)) {
-        fs.unlink(filePath, err => {
-          if (err) console.error('[DELETE IMAGE ERROR]', err);
-        });
+    if (req.file) {
+      media_path = `uploads/highlightevents/${req.file.filename}`;
+      media_type = req.file.mimetype.startsWith("video") ? "video" : "image";
+
+      // Delete old file
+      if (event.media_path) {
+        const oldPath = path.join(__dirname, "../../", event.media_path);
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
       }
     }
 
-    res.json({ message: 'Event and image deleted' });
+    const dedup_hash = hashContent(`${title}|${description}|${date_range}|${media_path}`);
+
+    await pool.query(
+      `UPDATE content_items 
+      SET title=?, description=?, category=?, media_type=?, media_path=?, link=?, dedup_hash=?
+      WHERE id=? AND source='highlight_event'`,
+      [
+        title,
+        description,
+        date_range,
+        media_type,
+        media_path,
+        link || null,
+        dedup_hash,
+        id,
+      ]
+    );
+
+    res.json({ message: "Event updated" });
   } catch (err) {
-    console.error('[DELETE highlight-events ERROR]', err);
+    console.error("[PUT highlight_event ERROR]", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* ---------------------------------------------------------
+ * DELETE EVENT
+ * --------------------------------------------------------- */
+router.delete("/highlight-events/:id", async (req, res) => {
+  const id = req.params.id;
+
+  try {
+    const pool = await getPool();
+
+    const [rows] = await pool.query(
+      "SELECT media_path FROM content_items WHERE id=? AND source='highlight_event'",
+      [id]
+    );
+    const event = rows[0];
+    if (!event)
+      return res.status(404).json({ error: "Event not found" });
+
+    // Delete file
+    if (event.media_path) {
+      const fullPath = path.join(__dirname, "../../", event.media_path);
+      if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
+    }
+
+    await pool.query(
+      "DELETE FROM content_items WHERE id=? AND source='highlight_event'",
+      [id]
+    );
+
+    res.json({ message: "Event deleted" });
+  } catch (err) {
+    console.error("[DELETE highlight_event ERROR]", err);
     res.status(500).json({ error: err.message });
   }
 });

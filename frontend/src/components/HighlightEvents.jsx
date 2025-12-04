@@ -1,4 +1,3 @@
-// HighlightEvents.jsx
 import React, { useEffect, useRef, useState } from 'react';
 import '../styles/components.css';
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -8,11 +7,9 @@ import 'swiper/css/effect-coverflow';
 import { format } from 'date-fns';
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-// Router mount is /api/cms/highlight, actual events resource is /highlight-events
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const API_ROOT = `${API_BASE_URL}/api/cms/highlight`;
 const EVENTS_ENDPOINT = `${API_ROOT}/highlight-events`;
-const UPLOADS_BASE = `${API_BASE_URL}/uploads/highlightevents/`;
 
 const HighlightEvents = () => {
   const swiperRef = useRef(null);
@@ -20,6 +17,9 @@ const HighlightEvents = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  /* -----------------------------------------------------
+   * Fetch Highlight Events
+   * ----------------------------------------------------- */
   const fetchEvents = async () => {
     setLoading(true);
     try {
@@ -27,12 +27,13 @@ const HighlightEvents = () => {
       const data = Array.isArray(res.data) ? res.data : [];
       setEvents(data);
       setActiveIndex(0);
-      // ensure swiper (if present) snaps to first slide
-      if (swiperRef.current && typeof swiperRef.current.slideTo === 'function') {
+
+      // Reset Swiper to first slide
+      if (swiperRef.current?.slideTo) {
         swiperRef.current.slideTo(0);
       }
     } catch (err) {
-      console.error('Failed to fetch events', err);
+      console.error('Failed to fetch highlight events', err);
       setEvents([]);
     } finally {
       setLoading(false);
@@ -43,81 +44,93 @@ const HighlightEvents = () => {
     fetchEvents();
   }, []);
 
-  // handle slide change: prefer realIndex (for looped swipers) then activeIndex fallback
+  /* -----------------------------------------------------
+   * Handle Swiper index change
+   * ----------------------------------------------------- */
   const handleSlideChange = (swiper) => {
-    const idx = typeof swiper.realIndex === 'number' ? swiper.realIndex : swiper.activeIndex;
+    const idx = swiper.realIndex ?? swiper.activeIndex ?? 0;
     setActiveIndex(idx);
   };
 
-  // robust date range parser that tolerates different common formats:
+  /* -----------------------------------------------------
+   * Parse date range stored in `category`
+   * Example: "Jan 5 - Feb 10"
+   * ----------------------------------------------------- */
   const parseDateRange = (rangeStr) => {
     if (!rangeStr || typeof rangeStr !== 'string') return null;
 
     const parts = rangeStr.split(' - ').map((p) => p.trim());
-    const nowYear = new Date().getFullYear();
+    const year = new Date().getFullYear();
 
-    const parseToken = (token) => {
-      // new Date(...) doesn't throw; it returns Invalid Date if unparsable
-      let d = new Date(token);
+    const parse = (s) => {
+      let d = new Date(s);
       if (!isNaN(d)) return d;
-      // try appending current year for "Aug 12" like tokens
-      d = new Date(`${token} ${nowYear}`);
-      if (!isNaN(d)) return d;
-      // lastly try ISO-like fallback
-      d = new Date(token.replace(/\./g, '-'));
-      if (!isNaN(d)) return d;
-      return null;
+
+      d = new Date(`${s} ${year}`);
+      return !isNaN(d) ? d : null;
     };
 
-    const start = parseToken(parts[0]);
-    const end = parts[1] ? parseToken(parts[1]) : start;
+    const start = parse(parts[0]);
+    const end = parse(parts[1] || parts[0]);
     if (!start || !end) return null;
+
     return { start, end };
   };
 
+  /* -----------------------------------------------------
+   * UI
+   * ----------------------------------------------------- */
   if (loading) return <p>Loading highlight events...</p>;
-  if (!loading && events.length === 0) return <p>No highlight events yet.</p>;
+  if (!events.length) return <p>No highlight events available.</p>;
 
-  // clamp activeIndex just in case
-  const clampedIndex = Math.min(Math.max(activeIndex, 0), events.length - 1);
-  const currentEvent = events[clampedIndex] ?? events[0];
+  const current = events[Math.min(activeIndex, events.length - 1)];
 
-  let formattedDateRange = '';
-  if (currentEvent?.date_range) {
-    const parsed = parseDateRange(currentEvent.date_range);
-    if (parsed) {
-      formattedDateRange = `${format(parsed.start, 'MMM dd')} - ${format(parsed.end, 'MMM dd')}`;
+  // Parse date range
+  let formattedDate = '';
+  if (current?.category) {
+    const p = parseDateRange(current.category);
+    if (p) {
+      formattedDate = `${format(p.start, 'MMM dd')} - ${format(p.end, 'MMM dd')}`;
     }
   }
 
   return (
     <section className="highlight-container">
+      {/* LEFT SIDE TEXT */}
       <div className="highlight-text">
         <h2>Highlight Events</h2>
-        <p className="highlight-title">{currentEvent?.title}</p>
-        <p>{currentEvent?.description}</p>
-        <p className="date-range">{formattedDateRange}</p>
-        {currentEvent?.link ? (
-          <a href={currentEvent.link} className="view-more" target="_blank" rel="noopener noreferrer">
+        <p className="highlight-title">{current?.title}</p>
+        <p className="highlight-description">{current?.description}</p>
+
+        {formattedDate && (
+          <p className="date-range">{formattedDate}</p>
+        )}
+
+        {current?.link && (
+          <a
+            href={current.link}
+            className="view-more"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             View More
           </a>
-        ) : null}
+        )}
       </div>
 
+      {/* RIGHT SIDE CAROUSEL */}
       <div className="highlight-carousel">
         <Swiper
           modules={[EffectCoverflow]}
           effect="coverflow"
-          grabCursor={true}
-          centeredSlides={true}
-          loop={events.length > 1} // only loop when multiple slides exist
-          slidesPerView={2.7}
-          speed={700}
-          slideToClickedSlide={true}
-          onSwiper={(swiper) => {
-            swiperRef.current = swiper;
-          }}
+          grabCursor
+          centeredSlides
+          loop={events.length > 1}
+          slidesPerView={2.5}
+          onSwiper={(swiper) => (swiperRef.current = swiper)}
           onSlideChange={handleSlideChange}
+          slideToClickedSlide
+          speed={700}
           coverflowEffect={{
             rotate: 0,
             stretch: 0,
@@ -126,7 +139,7 @@ const HighlightEvents = () => {
             slideShadows: false,
           }}
           breakpoints={{
-            0: { slidesPerView: 1 },
+            0: { slidesPerView: 1.2 },
             640: { slidesPerView: 2 },
             1024: { slidesPerView: 3 },
           }}
@@ -134,44 +147,45 @@ const HighlightEvents = () => {
         >
           {events.map((event, index) => {
             const key = event.id ?? event._id ?? index;
-            const src =
-              event.image_url && event.image_url.startsWith('http')
-                ? event.image_url
-                : event.image_url
-                ? `${UPLOADS_BASE}${event.image_url}`
-                : '';
+            const src = event.media_path
+              ? `${API_BASE_URL}/${event.media_path}?t=${Date.now()}`
+              : '';
 
             return (
               <SwiperSlide key={key}>
                 {src ? (
                   <img
                     src={src}
-                    alt={event.title ?? `event-${index}`}
-                    onError={(e) => {
-                      // graceful fallback: hide broken image
-                      e.currentTarget.style.display = 'none';
-                    }}
+                    alt={event.title}
+                    className="highlight-event-image"
+                    onError={(e) => (e.currentTarget.style.display = 'none')}
                     loading="lazy"
                   />
                 ) : (
-                  <div style={{ width: '100%', height: 200, background: '#eee' }} />
+                  <div
+                    style={{
+                      width: '100%',
+                      height: 220,
+                      background: '#f0f0f0',
+                      borderRadius: '10px',
+                    }}
+                  />
                 )}
               </SwiperSlide>
             );
           })}
         </Swiper>
 
+        {/* NEXT BUTTON */}
         <div
           className="arrow"
-          onClick={() => {
-            if (swiperRef.current && typeof swiperRef.current.slideNext === 'function') swiperRef.current.slideNext();
-          }}
           role="button"
           tabIndex={0}
+          aria-label="Next"
+          onClick={() => swiperRef.current?.slideNext()}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') swiperRef.current?.slideNext();
           }}
-          aria-label="Next highlight"
         >
           &gt;
         </div>

@@ -1,8 +1,10 @@
-/* Login Page - Unique Class Names */
+/* ===========================
+   REGISTER PAGE (UNIQUE CSS)
+   =========================== */
 
-.login-form-container {
+.reg-container {
   width: 100%;
-  max-width: 400px;
+  max-width: 600px;
   margin: 80px auto;
   padding: 30px;
   background-color: white;
@@ -11,13 +13,13 @@
   position: relative;
 }
 
-.login-title {
+.reg-title {
   text-align: center;
   color: #033859;
   margin-bottom: 20px;
 }
 
-.login-input {
+.reg-input {
   width: 90%;
   padding: 10px 14px;
   margin-bottom: 15px;
@@ -26,7 +28,7 @@
   font-size: 14px;
 }
 
-.login-submit-button {
+.reg-submit-btn {
   width: 50%;
   padding: 12px;
   background-color: #F25749;
@@ -40,121 +42,85 @@
   margin: 0 auto;
 }
 
-.login-submit-button:hover {
+.reg-submit-btn:hover {
   background-color: #d8463d;
 }
 
-.login-error-message {
-  color: red;
-  margin-top: 10px;
-  text-align: center;
-  font-size: 14px;
+.reg-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.login-register-link {
-  text-align: center;
+.reg-password-eye {
+  position: absolute;
+  right: 12px;
+  cursor: pointer;
+  color: #555;
+}
+
+.reg-tooltip-icon {
+  position: absolute;
+  right: 40px;
+  color: #888;
+  cursor: pointer;
+}
+
+/* ===========================
+      MODAL (REGISTER ONLY)
+   =========================== */
+
+.reg-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: fadeIn 0.2s ease;
+  z-index: 9999;
+}
+
+.reg-terms-modal {
+  background: white;
+  padding: 25px;
+  width: 100%;
+  max-width: 850px;
+  border-radius: 12px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.25);
+  animation: slideIn 0.25s ease-out;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+/* Scrollbar */
+.reg-terms-modal::-webkit-scrollbar {
+  width: 6px;
+}
+
+.reg-terms-modal::-webkit-scrollbar-thumb {
+  background: #f25749;
+  border-radius: 10px;
+}
+
+.reg-close-modal-btn {
+  background: #3498db;
+  color: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+  font-weight: 600;
   margin-top: 20px;
+  float: right;
 }
 
-.login-back-button {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  background: none;
-  border: none;
-  color: #033859;
-  font-size: 14px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: color 0.3s ease;
-}
-
-.login-back-button:hover {
-  color: #F25749;
-}
-
-.password-wrapper {
-  position: relative;
-}
-
-.show-password-toggle {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  color: #0077cc;
-  font-size: 0.9rem;
-  cursor: pointer;
-}
-
-
-.error-message {
-  color: red;
-  margin-top: 10px;
-  text-align: center;
-  font-size: 14px;
-}
-
-/* Register Page - Unique Class Names */
-
-.register-form-container {
-  width: 100%;
-  max-width: 400px;
-  margin: 80px auto;
-  padding: 30px;
-  background-color: white;
-  border-radius: 10px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  position: relative;
-}
-
-.register-title {
-  text-align: center;
-  color: #033859;
-  margin-bottom: 20px;
-}
-
-.register-input {
-  width: 90%;
-  padding: 10px 14px;
-  margin-bottom: 15px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 14px;
-}
-
-.register-submit-button {
-  width: 50%;
-  padding: 12px;
-  background-color: #F25749;
-  color: white;
-  border: none;
-  border-radius: 99px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-  display: block;
-  margin: 0 auto;
-}
-
-.register-submit-button:hover {
-  background-color: #d8463d;
-}
-
-.register-error-message {
-  color: red;
-  margin-top: 10px;
-  text-align: center;
-  font-size: 14px;
-}
-
-.register-success-message {
-  color: green;
-  margin-top: 10px;
-  text-align: center;
-  font-size: 14px;
+/* Fade and slide animations */
+@keyframes slideIn {
+  from { transform: translateY(-10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 .register-link {
@@ -171,6 +137,337 @@
 .register-link a:hover {
   text-decoration: underline;
 }
+
+
+/* LOGIN FORM WRAPPER */
+.login-form-container-unique {
+  width: 100%;
+  max-width: 420px;
+  margin: 80px auto;
+  padding: 30px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 25px rgba(0,0,0,0.1);
+}
+
+/* TITLE */
+.login-title-unique {
+  text-align: center;
+  color: #033859;
+  margin-bottom: 20px;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+/* INPUT WRAPPER */
+.login-input-wrapper-unique {
+  position: relative;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+}
+
+/* INPUT FIELD */
+.login-input-unique {
+  width: 90%;
+  padding: 12px 14px;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  font-size: 15px;
+  outline: none;
+  transition: border 0.3s ease;
+}
+.login-input-unique:focus {
+  border-color: #3498db;
+}
+
+/* INPUT WITH ICON */
+.login-input-with-icon-unique {
+  padding-left: 42px;
+}
+
+/* INPUT ICON */
+.login-input-icon-unique {
+  position: absolute;
+  left: 12px;
+  color: #555;
+  font-size: 20px;
+}
+
+/* PASSWORD EYE */
+.login-password-eye-unique {
+  position: absolute;
+  right: 12px;
+  cursor: pointer;
+  color: #555;
+  font-size: 20px;
+}
+
+/* LOGIN BUTTON */
+.login-submit-button-unique {
+  width: 60%;
+  padding: 12px;
+  margin: 10px auto;
+  background-color: #F25749;
+  color: #ffffff;
+  border: none;
+  border-radius: 999px;
+  font-size: 16px;
+  display: block;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.3s ease;
+}
+.login-submit-button-unique:hover {
+  background-color: #d8463d;
+}
+
+/* ERROR MESSAGE */
+.login-error-message-unique {
+  color: #d40000;
+  text-align: center;
+  margin-top: 10px;
+}
+
+/* REGISTER LINK */
+.login-register-link-unique {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 14px;
+}
+.login-register-anchor-unique {
+  color: #F25749;
+  text-decoration: none;
+}
+.login-register-anchor-unique:hover {
+  text-decoration: underline;
+}
+
+/* FORGOT PASSWORD */
+.login-forgot-link-unique {
+  text-align: right;
+  margin-bottom: 10px;
+}
+.login-forgot-btn-unique {
+  background: none;
+  border: none;
+  color: #0077cc;
+  cursor: pointer;
+  font-size: 13px;
+}
+.login-forgot-btn-unique:hover {
+  text-decoration: underline;
+}
+
+/* MODAL OVERLAY */
+.login-modal-overlay-unique {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: loginFadeIn 0.2s ease;
+  z-index: 9999;
+}
+
+/* MODAL */
+.login-forgot-modal-unique {
+  background: #ffffff;
+  padding: 25px;
+  width: 90%;
+  max-width: 500px;
+  border-radius: 12px;
+  animation: loginSlideIn 0.25s ease-out;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+.login-forgot-modal-unique h3 {
+  margin-bottom: 12px;
+  color: #033859;
+  font-size: 22px;
+}
+
+/* MODAL BUTTON */
+.login-modal-btn-unique {
+  margin-top: 14px;
+  margin-left: 50px;
+  width:80%;
+  padding: 12px;
+  background-color: #F25749;
+  color: white;
+  border: none;
+  border-radius: 999px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.login-modal-btn-unique:hover {
+  background-color: #d8463d;
+}
+
+/* CLOSE BUTTON */
+.login-modal-close-btn-unique {
+  margin-top: 15px;
+  margin-left: 400px;
+  background-color: #3498db;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* PASSWORD CHECKLIST */
+.password-requirements-unique {
+  margin-top: 12px;
+  padding: 12px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  font-size: 13px;
+  animation: fadeIn 0.3s ease;
+}
+.password-requirements-unique .req {
+  color: #cc0000;
+  margin-bottom: 4px;
+}
+.password-requirements-unique .req.ok {
+  color: #009900;
+  font-weight: 600;
+}
+
+/* STRENGTH METER */
+.strength-meter-unique {
+  margin-top: 10px;
+  width: 100%;
+  height: 6px;
+  background: #ddd;
+  border-radius: 10px;
+}
+.strength-bar {
+  height: 100%;
+  transition: width 0.35s ease, background 0.35s ease;
+}
+.strength-0 { background: #ff0000; }
+.strength-1 { background: #ff4d4d; }
+.strength-2 { background: #ff9933; }
+.strength-3 { background: #ffd633; }
+.strength-4 { background: #8bc34a; }
+.strength-5 { background: #2ecc71; }
+
+.strength-label-unique {
+  text-align: right;
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ANIMATIONS */
+@keyframes loginFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes loginSlideIn {
+  from { transform: translateY(-10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+
+
+
+
+/* ===========================
+    VERIFY OTP PAGE (UNIQUE)
+   =========================== */
+
+.verify-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: #f4f4f4;
+}
+
+.verify-card {
+  background: white;
+  padding: 30px;
+  width: 100%;
+  max-width: 450px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  text-align: center;
+}
+
+.verify-title {
+  font-size: 24px;
+  color: #033859;
+  margin-bottom: 10px;
+}
+
+.verify-subtext {
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 5px;
+}
+
+.verify-email-box {
+  background: #eef6ff;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #033859;
+  border: 1px solid #cbdaf5;
+  margin-bottom: 20px;
+}
+
+.verify-input {
+  width: 80%;
+  padding: 12px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  text-align: center;
+  font-size: 18px;
+  letter-spacing: 3px;
+}
+
+.verify-submit-btn {
+  width: 60%;
+  padding: 12px;
+  background-color: #F25749;
+  color: white;
+  border: none;
+  border-radius: 99px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.verify-submit-btn:hover {
+  background-color: #d8463d;
+}
+
+.verify-error {
+  margin-top: 10px;
+  color: red;
+  font-size: 14px;
+}
+
+.verify-resend {
+  margin-top: 15px;
+  font-size: 14px;
+  color: #3498db;
+  cursor: pointer;
+}
+
+.verify-resend:hover {
+  text-decoration: underline;
+}
+
 
 
 .map-page-container {
@@ -328,3 +625,4 @@
 .leaflet-routing-container {
   display: none !important;
 }
+

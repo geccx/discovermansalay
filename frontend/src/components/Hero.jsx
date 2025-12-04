@@ -24,7 +24,7 @@ const Hero = () => {
   useEffect(() => {
     fetchHero();
 
-    // ✅ Optional: poll every 10s to automatically update frontend after CMS edits
+    // Optional: Auto-refresh every 10 seconds
     const interval = setInterval(fetchHero, 10000);
     return () => clearInterval(interval);
   }, []);
@@ -60,7 +60,7 @@ const Hero = () => {
 
       <div className="hero-overlay">
         <h1 className="hero-title">{heroData.title}</h1>
-        <p className="hero-subtitle">{heroData.subtitle}</p>
+        <p className="hero-subtitle">{heroData.description}</p>
       </div>
     </div>
   );

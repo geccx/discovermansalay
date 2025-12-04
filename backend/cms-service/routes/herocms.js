@@ -4,86 +4,103 @@ const { getPool } = require('../../config/db');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 
-// Define new upload folder
+// Upload folders
 const uploadFolder = path.join(__dirname, '../../uploads');
 const homeBackgroundFolder = path.join(uploadFolder, 'home-background');
 
-// Ensure folders exist
 if (!fs.existsSync(uploadFolder)) fs.mkdirSync(uploadFolder);
 if (!fs.existsSync(homeBackgroundFolder)) fs.mkdirSync(homeBackgroundFolder);
 
-// Multer storage setup with fixed filename: home_background + original ext
+// Multer storage
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, homeBackgroundFolder);
-  },
-  filename: (req, file, cb) => {
+  destination: (_, __, cb) => cb(null, homeBackgroundFolder),
+  filename: (_, file, cb) => {
     const ext = path.extname(file.originalname);
-    const fixedFilename = 'home_background' + ext;
-    console.log('[MULTER] Saving file as:', fixedFilename);
-    cb(null, fixedFilename);
+    const fixedName = 'home_background' + ext;
+    console.log('[MULTER] Saving as:', fixedName);
+    cb(null, fixedName);
   },
 });
 
 const upload = multer({ storage });
 
-// GET latest hero content
+// Utility: Create dedup hash
+function generateHash(data) {
+  return crypto.createHash('sha256').update(data).digest('hex');
+}
+
+/* ---------------------------------------------------------
+ * GET HERO CONTENT (latest)
+ * --------------------------------------------------------- */
 router.get('/', async (req, res) => {
   try {
     const pool = await getPool();
-    const [rows] = await pool.query('SELECT * FROM hero_content ORDER BY id DESC LIMIT 1');
-    if (rows.length === 0) return res.status(404).json({ message: 'No content found' });
+
+    const [rows] = await pool.query(
+      "SELECT * FROM content_items WHERE source='hero' ORDER BY id DESC LIMIT 1"
+    );
+
+    if (rows.length === 0)
+      return res.status(404).json({ message: 'No hero content found' });
+
     res.json(rows[0]);
   } catch (err) {
+    console.error('[HERO GET ERROR]', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// PATCH update hero content
+/* ---------------------------------------------------------
+ * PATCH: UPDATE HERO CONTENT
+ * Inserts new row into content_items (versioning)
+ * --------------------------------------------------------- */
 router.patch('/', upload.single('media'), async (req, res) => {
   try {
     const pool = await getPool();
     const { title, subtitle } = req.body;
 
-    const [rows] = await pool.query('SELECT * FROM hero_content ORDER BY id DESC LIMIT 1');
+    const [rows] = await pool.query(
+      "SELECT * FROM content_items WHERE source='hero' ORDER BY id DESC LIMIT 1"
+    );
     const current = rows[0];
 
-    let media_type = 'image';
-    let media_path;
+    let media_type = current?.media_type || 'image';
+    let media_path = current?.media_path || 'uploads/home-background/default.jpg';
 
+    // If file uploaded
     if (req.file) {
       media_path = `uploads/home-background/${req.file.filename}`;
       media_type = req.file.mimetype.startsWith('video/') ? 'video' : 'image';
 
-      // Delete old media file if different
-      if (
-        current?.media_path &&
-        current.media_path !== media_path &&
-        !current.media_path.includes('default')
-      ) {
-        const oldFilePath = path.join(__dirname, '../../', current.media_path);
-        fs.unlink(oldFilePath, (err) => {
+      // Delete old media if replaced
+      if (current?.media_path && current.media_path !== media_path) {
+        const oldPath = path.join(__dirname, '../../', current.media_path);
+        fs.unlink(oldPath, (err) => {
           if (err) {
-            console.error('[DELETE FILE ERROR] Failed to delete old media:', err);
+            console.warn('[DELETE FAILED] Old file not removed:', err.message);
           } else {
-            console.log('[DELETE FILE] Old media deleted:', current.media_path);
+            console.log('[DELETE FILE] Old hero media removed:', current.media_path);
           }
         });
       }
-    } else {
-      media_path = current?.media_path || 'uploads/home-background/default.jpg';
-      media_type = current?.media_type || 'image';
     }
 
+    // Create dedup hash
+    const dedup_hash = generateHash(`${title}|${subtitle}|${media_path}`);
+
+    // Insert new "version"
     await pool.query(
-      'INSERT INTO hero_content (title, subtitle, media_type, media_path) VALUES (?, ?, ?, ?)',
-      [title, subtitle, media_type, media_path]
+      `INSERT INTO content_items 
+      (source, title, description, media_type, media_path, dedup_hash) 
+      VALUES (?, ?, ?, ?, ?, ?)`,
+      ['hero', title, subtitle, media_type, media_path, dedup_hash]
     );
 
     res.json({ message: 'Hero content updated successfully' });
   } catch (err) {
-    console.error('[PATCH ERROR]', err);
+    console.error('[HERO PATCH ERROR]', err);
     res.status(500).json({ error: err.message });
   }
 });
