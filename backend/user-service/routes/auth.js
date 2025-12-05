@@ -259,14 +259,21 @@ router.post("/admin/verify-otp", async (req, res) => {
 
     const user = rows[0];
 
+    // 1️⃣ Validate expiration
+    if (user.admin_otp_expires_at && new Date(user.admin_otp_expires_at) < new Date())
+      return res.status(400).json({ message: "Admin OTP expired." });
+
+    // 2️⃣ Validate code
     if (String(user.admin_otp_code) !== String(otp))
       return res.status(400).json({ message: "Invalid OTP." });
 
+    // 3️⃣ Clear OTP
     await pool.query(
       `UPDATE users SET admin_otp_code = NULL, admin_otp_expires_at = NULL WHERE id = ?`,
       [user.id]
     );
 
+    // 4️⃣ Sign token
     const token = jwt.sign(
       { id: user.id, role: user.role },
       JWT_SECRET,
@@ -288,5 +295,6 @@ router.post("/admin/verify-otp", async (req, res) => {
     res.status(500).json({ message: "Error verifying admin OTP." });
   }
 });
+
 
 module.exports = router;

@@ -6,8 +6,8 @@ const fs = require("fs");
 const path = require("path");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
-const { getPool } = require("../../config/db");
 const brevo = require("@getbrevo/brevo");
+const { getPool } = require("../../config/db");
 
 /* ========================================================
    ENV / CONFIG
@@ -29,9 +29,9 @@ async function sendEmail(to, subject, html) {
       htmlContent: html,
     });
 
-    console.log("📩 Email sent:", to);
+    console.log("📩 USER EMAIL SENT:", to);
   } catch (err) {
-    console.error("❌ Email failed:", err.response?.body || err.message);
+    console.error("❌ USER EMAIL FAILED:", err.response?.body || err.message);
   }
 }
 
@@ -41,7 +41,6 @@ async function sendEmail(to, subject, html) {
 const uploadFolder = path.join(__dirname, "../../uploads");
 const userProfileFolder = path.join(uploadFolder, "users-profile");
 
-// Ensure folders exist
 if (!fs.existsSync(uploadFolder)) fs.mkdirSync(uploadFolder, { recursive: true });
 if (!fs.existsSync(userProfileFolder)) fs.mkdirSync(userProfileFolder, { recursive: true });
 
@@ -82,38 +81,37 @@ function buildInviteEmailHtml(firstname, verificationUrl) {
   <div style="font-family:system-ui;background:#f9fafb;padding:24px;">
     <div style="max-width:600px;background:#fff;border-radius:14px;padding:24px;margin:auto;box-shadow:0 10px 30px rgba(0,0,0,0.05);">
       <h2 style="color:#f97316;text-align:center;margin-bottom:8px;">Discover Mansalay</h2>
-      <p style="color:#4b5563;">Hi ${safe},</p>
-      <p style="color:#4b5563;">You've been invited to join Discover Mansalay. Click the button below to activate your account.</p>
+      <p style="color:#4b5563;">Hello ${safe},</p>
+      <p style="color:#4b5563;">You are invited to register your Discover Mansalay account. Click below:</p>
+
       <div style="text-align:center;margin:24px 0;">
         <a href="${verificationUrl}" style="background:#f97316;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">
-          Activate Account
+          Complete Registration
         </a>
       </div>
-      <p style="font-size:12px;color:#9ca3af;text-align:center;margin-top:20px;">
-        If you did not request this, ignore this message.
+
+      <p style="font-size:12px;color:#9ca3af;text-align:center;">
+        If you didn't request this, you may ignore this email.
       </p>
     </div>
   </div>`;
 }
 
 /* ========================================================
-   GET USER COUNT
+   USER COUNT
 ======================================================== */
 router.get("/count", async (req, res) => {
   try {
     const pool = await getPool();
-    const [rows] = await pool.query(
-      `SELECT COUNT(*) AS count FROM users WHERE role='user'`
-    );
+    const [rows] = await pool.query(`SELECT COUNT(*) AS count FROM users WHERE role='user'`);
     res.json({ count: rows[0].count });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Failed fetching user count" });
+    res.status(500).json({ message: "Failed getting user count" });
   }
 });
 
 /* ========================================================
-   USER LIST (Pagination + Search + Status)
+   LIST USERS
 ======================================================== */
 router.get("/list", async (req, res) => {
   try {
@@ -160,13 +158,12 @@ router.get("/list", async (req, res) => {
       users: rows.map(normalizeImagePath),
     });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: "Failed fetching user list" });
   }
 });
 
 /* ========================================================
-   CREATE USER (admin manually adds user)
+   MANUAL USER CREATION
 ======================================================== */
 router.post("/user", upload.single("profile_image"), async (req, res) => {
   try {
@@ -212,43 +209,41 @@ router.post("/user", upload.single("profile_image"), async (req, res) => {
       ]
     );
 
-    const [newUser] = await pool.query(
-      `SELECT * FROM users WHERE id=?`,
-      [insert.insertId]
-    );
+    const [newUser] = await pool.query(`SELECT * FROM users WHERE id=?`, [
+      insert.insertId,
+    ]);
 
     res.json(normalizeImagePath(newUser[0]));
   } catch (err) {
-    console.error("CREATE USER ERROR:", err);
+    console.error(err);
     res.status(500).json({ message: "Failed creating user" });
   }
 });
 
 /* ========================================================
-   SEND USER INVITE
+   USER INVITE (BREVO EMAIL)
 ======================================================== */
 router.post("/invite", async (req, res) => {
   try {
+    const pool = await getPool();
     const { email, firstname, lastname } = req.body;
 
     if (!email) return res.status(400).json({ message: "Email required" });
 
-    const pool = await getPool();
-
-    const [exists] = await pool.query(
-      "SELECT id FROM users WHERE email=?",
-      [email]
-    );
+    const [exists] = await pool.query("SELECT id FROM users WHERE email=?", [
+      email,
+    ]);
 
     if (exists.length)
-      return res.status(400).json({ message: "Email already used." });
+      return res.status(400).json({ message: "Email already registered" });
 
     const token = crypto.randomBytes(32).toString("hex");
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
     const verificationUrl = `${FRONTEND_URL}/invite/register?token=${token}`;
 
     await pool.query(
-      `INSERT INTO users
+      `INSERT INTO users 
        (email, firstname, lastname, role, status, invite_token, invite_expires_at, invited)
        VALUES (?, ?, ?, 'user', 'pending', ?, ?, 1)`,
       [email, firstname || null, lastname || null, token, expires]
@@ -258,7 +253,7 @@ router.post("/invite", async (req, res) => {
 
     res.json({ message: "Invite sent." });
   } catch (err) {
-    console.error("INVITE ERROR:", err);
+    console.error("USER INVITE ERROR:", err);
     res.status(500).json({ message: "Failed sending invite" });
   }
 });
@@ -272,19 +267,18 @@ router.get("/invite/validate", async (req, res) => {
 
     const pool = await getPool();
     const [rows] = await pool.query(
-      `SELECT email, invite_expires_at FROM users WHERE invite_token=?`,
+      "SELECT email, invite_expires_at FROM users WHERE invite_token=?",
       [token]
     );
 
     if (!rows.length)
-      return res.status(400).json({ message: "Invalid token" });
+      return res.status(400).json({ message: "Invalid invite token." });
 
     if (new Date(rows[0].invite_expires_at) < new Date())
-      return res.status(400).json({ message: "Expired link" });
+      return res.status(400).json({ message: "Invite has expired." });
 
     res.json({ email: rows[0].email });
   } catch (err) {
-    console.error("VALIDATE ERROR:", err);
     res.status(500).json({ message: "Failed validating invite" });
   }
 });
@@ -297,12 +291,10 @@ router.post("/invite/register", async (req, res) => {
     const { token, username, firstname, lastname, password, contact_number, address } =
       req.body;
 
-    const hashed = await bcrypt.hash(password, 10);
-
     const pool = await getPool();
 
     const [rows] = await pool.query(
-      `SELECT id FROM users WHERE invite_token=? AND status='pending'`,
+      "SELECT id FROM users WHERE invite_token=? AND status='pending'",
       [token]
     );
 
@@ -310,6 +302,7 @@ router.post("/invite/register", async (req, res) => {
       return res.status(400).json({ message: "Invalid or expired invite." });
 
     const user = rows[0];
+    const hashed = await bcrypt.hash(password, 10);
 
     await pool.query(
       `UPDATE users SET
@@ -332,45 +325,7 @@ router.post("/invite/register", async (req, res) => {
     res.json({ message: "Account created!" });
   } catch (err) {
     console.error("REGISTER INVITED USER ERROR:", err);
-    res.status(500).json({ message: "Failed registering user" });
-  }
-});
-
-/* ========================================================
-   VERIFY USER TOKEN (simple verify)
-======================================================== */
-router.post("/verify", async (req, res) => {
-  try {
-    const { token } = req.body;
-
-    const pool = await getPool();
-
-    const [rows] = await pool.query(
-      `SELECT id, invite_expires_at FROM users WHERE invite_token=?`,
-      [token]
-    );
-
-    if (!rows.length)
-      return res.status(400).json({ message: "Invalid token" });
-
-    if (new Date(rows[0].invite_expires_at) < new Date())
-      return res.status(400).json({ message: "Expired token" });
-
-    await pool.query(
-      `UPDATE users SET 
-        status='active',
-        is_verified=1,
-        invite_token=NULL,
-        invite_expires_at=NULL,
-        invited=0
-       WHERE id=?`,
-      [rows[0].id]
-    );
-
-    res.json({ message: "Account verified." });
-  } catch (err) {
-    console.error("VERIFY USER ERROR:", err);
-    res.status(500).json({ message: "Failed verifying user" });
+    res.status(500).json({ message: "Failed creating account" });
   }
 });
 
@@ -382,15 +337,12 @@ router.put("/user/:id", upload.single("profile_image"), async (req, res) => {
     const pool = await getPool();
     const id = req.params.id;
 
-    const [foundRows] = await pool.query(
-      `SELECT * FROM users WHERE id=?`,
-      [id]
-    );
+    const [found] = await pool.query("SELECT * FROM users WHERE id=?", [id]);
 
-    if (!foundRows.length)
+    if (!found.length)
       return res.status(404).json({ message: "User not found" });
 
-    const oldUser = foundRows[0];
+    const old = found[0];
 
     let {
       username,
@@ -403,58 +355,54 @@ router.put("/user/:id", upload.single("profile_image"), async (req, res) => {
       existing_image,
     } = req.body;
 
-    // Hash password if updated
+    // Only update password if provided
     if (password?.trim()) {
       password = await bcrypt.hash(password, 10);
     } else {
-      password = oldUser.password;
+      password = old.password;
     }
 
-    // Prevent admin creation
+    // User role always stays "user"
     const role = "user";
 
-    // Check user conflicts
-    const [conflicts] = await pool.query(
-      `SELECT * FROM users WHERE (username=? OR email=?) AND id<>?`,
+    const [conflict] = await pool.query(
+      "SELECT id FROM users WHERE (username=? OR email=?) AND id<>?",
       [username, email, id]
     );
 
-    if (conflicts.length)
-      return res.status(400).json({ message: "Username or email already exists" });
+    if (conflict.length)
+      return res.status(400).json({ message: "Username or email already used" });
 
-    let profile_image = oldUser.profile_image;
+    let profile_image = old.profile_image;
 
     if (req.file) {
       profile_image = `uploads/users-profile/${req.file.filename}`;
-      deleteFileIfExists(oldUser.profile_image);
+      deleteFileIfExists(old.profile_image);
     } else if (existing_image === "" || existing_image === "null") {
-      deleteFileIfExists(oldUser.profile_image);
+      deleteFileIfExists(old.profile_image);
       profile_image = null;
     }
 
     await pool.query(
       `UPDATE users SET
-        username=?, firstname=?, lastname=?, email=?,
+        username=?, firstname=?, lastname=?, email=?, 
         password=?, role=?, contact_number=?, address=?, profile_image=?
        WHERE id=?`,
       [
         username,
-        firstname || null,
-        lastname || null,
+        firstname,
+        lastname,
         email,
         password,
         role,
-        contact_number || null,
-        address || null,
+        contact_number,
+        address,
         profile_image,
         id,
       ]
     );
 
-    const [updated] = await pool.query(
-      `SELECT * FROM users WHERE id=?`,
-      [id]
-    );
+    const [updated] = await pool.query("SELECT * FROM users WHERE id=?", [id]);
 
     res.json(normalizeImagePath(updated[0]));
   } catch (err) {
@@ -472,18 +420,16 @@ router.delete("/user/:id", async (req, res) => {
     const pool = await getPool();
 
     const [rows] = await pool.query(
-      `SELECT profile_image FROM users WHERE id=?`,
+      "SELECT profile_image FROM users WHERE id=?",
       [id]
     );
 
     if (!rows.length)
       return res.status(404).json({ message: "User not found" });
 
-    const img = rows[0].profile_image;
+    if (rows[0].profile_image) deleteFileIfExists(rows[0].profile_image);
 
-    await pool.query(`DELETE FROM users WHERE id=?`, [id]);
-
-    if (img) deleteFileIfExists(img);
+    await pool.query("DELETE FROM users WHERE id=?", [id]);
 
     res.json({ message: "User deleted" });
   } catch (err) {
