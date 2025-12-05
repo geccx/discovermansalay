@@ -49,7 +49,12 @@ export default function DashboardOverview() {
   // Fetch user/admin counts
  const fetchCounts = async () => {
   try {
-    const res = await axios.get(`${API_BASE}/api/admin/stats`);
+    const res = await axios.get(`${API_BASE}/api/admin/stats`, {
+  headers: {
+    Authorization: "Bearer " + localStorage.getItem("token"),
+  },
+});
+
 
     setUserCount(res.data.userCount || 0);
     setAdminCount(res.data.adminCount || 0);
