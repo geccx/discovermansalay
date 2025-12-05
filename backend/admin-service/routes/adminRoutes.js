@@ -5,26 +5,50 @@ const fs = require("fs");
 const path = require("path");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
-const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
+const brevo = require("@getbrevo/brevo");
 
 const { getPool } = require("../../config/db");
 const { authRequired } = require("../../user-service/middleware/authMiddleware");
 
 const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_key";
 
-// ----------------------------------------------------
-// Upload folders
-// ----------------------------------------------------
+/* ---------------------------------------------
+   BREVO EMAIL API
+--------------------------------------------- */
+const brevoClient = new brevo.TransactionalEmailsApi();
+brevoClient.setApiKey(
+  brevo.TransactionalEmailsApiApiKeys.apiKey,
+  process.env.BREVO_API_KEY
+);
+
+async function sendEmail(to, subject, html) {
+  try {
+    await brevoClient.sendTransacEmail({
+      sender: { email: process.env.SMTP_FROM, name: "Discover Mansalay" },
+      to: [{ email: to }],
+      subject,
+      htmlContent: html,
+    });
+
+    console.log("📩 Email sent:", to);
+  } catch (err) {
+    console.error("❌ Email failed:", err.response?.body || err.message);
+  }
+}
+
+/* ---------------------------------------------
+   Upload Folders
+--------------------------------------------- */
 const uploadFolder = path.join(__dirname, "../../uploads");
 const adminsProfileFolder = path.join(uploadFolder, "admins-profile");
 
 if (!fs.existsSync(uploadFolder)) fs.mkdirSync(uploadFolder, { recursive: true });
 if (!fs.existsSync(adminsProfileFolder)) fs.mkdirSync(adminsProfileFolder, { recursive: true });
 
-// ----------------------------------------------------
-// Multer storage
-// ----------------------------------------------------
+/* ---------------------------------------------
+   Multer Setup
+--------------------------------------------- */
 const storage = multer.diskStorage({
   destination: (_, __, cb) => cb(null, adminsProfileFolder),
   filename: (req, file, cb) => {
@@ -35,86 +59,31 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// ----------------------------------------------------
-// Email Transporter
-// ----------------------------------------------------
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "smtp.gmail.com",
-  port: Number(process.env.SMTP_PORT) || 587,
-  secure: false,
-  auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-});
-
+/* ---------------------------------------------
+   Helpers
+--------------------------------------------- */
 function generateOtp(n = 6) {
   return [...Array(n)].map(() => Math.floor(Math.random() * 10)).join("");
 }
 
-async function sendInviteLink(email, token) {
-  const baseUrl = process.env.CLIENT_URL || "http://localhost:5173";
-  const link = `${baseUrl}/admin/register?token=${token}`;
-
-  const mailOptions = {
-    from: `"Discover Mansalay" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
-    to: email,
-    subject: "Admin Invitation - Discover Mansalay",
-    html: `
-      <p>Hello,</p>
-      <p>You have been invited to become an Admin of Discover Mansalay.</p>
-      <p>Click the link below to complete your registration:</p>
-      <p><a href="${link}" style="font-size: 16px;">Complete Admin Registration</a></p>
-      <p>This link will expire in <strong>24 hours</strong>.</p>
-    `,
-  };
-
-  try {
-    await transporter.sendMail(mailOptions);
-    console.log("📧 Sent admin invite link to:", email);
-  } catch (err) {
-    console.error("❌ Invite email failed:", err.message);
+function normalizeImagePath(u) {
+  if (u?.profile_image) {
+    u.profile_image = u.profile_image.replace(/\\/g, "/");
   }
+  return u;
 }
 
-async function sendAdminOtpEmail(email, name, otp) {
-  const mailOptions = {
-    from: `"Discover Mansalay" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
-    to: email,
-    subject: "Your Admin Verification Code",
-    html: `
-      <p>Hello ${name || ""},</p>
-      <p>Use the code below to verify your admin account:</p>
-      <h2>${otp}</h2>
-      <p>This code will expire in 10 minutes.</p>
-    `,
-  };
-
-  try {
-    await transporter.sendMail(mailOptions);
-    console.log("📧 Sent admin OTP to:", email);
-  } catch (err) {
-    console.error("❌ OTP email failed:", err.message);
-  }
-}
-
-// Helpers
 function deleteFileIfExists(filePath) {
   if (!filePath) return;
   const full = path.join(__dirname, "../../", filePath);
   if (fs.existsSync(full)) fs.unlinkSync(full);
 }
 
-function normalizeImagePath(user) {
-  if (user?.profile_image) {
-    user.profile_image = user.profile_image.replace(/\\/g, "/");
-  }
-  return user;
-}
+/* ============================================================
+   PUBLIC ROUTES
+============================================================ */
 
-/* ---------------------------------------------------
-   PUBLIC ROUTES (NO AUTH)
---------------------------------------------------- */
-
-// Validate invitation token
-// GET /api/admin/invite/validate?token=...
+/* Validate invitation token */
 router.get("/invite/validate", async (req, res) => {
   try {
     const { token } = req.query;
@@ -122,129 +91,64 @@ router.get("/invite/validate", async (req, res) => {
 
     const pool = await getPool();
     const [rows] = await pool.query(
-      `
-      SELECT id, email, status, invite_expires_at
-      FROM users
-      WHERE invite_token = ? AND role = 'admin'
-      `,
+      `SELECT id, email, status, invite_expires_at
+       FROM users WHERE invite_token = ? AND role = 'admin'`,
       [token]
     );
 
-    if (rows.length === 0) {
+    if (!rows.length)
       return res.status(400).json({ message: "Invalid or used invitation link." });
-    }
 
     const invite = rows[0];
 
-    if (invite.invite_expires_at && new Date(invite.invite_expires_at) < new Date()) {
-      return res.status(400).json({ message: "Invitation link has expired." });
-    }
+    if (invite.invite_expires_at && new Date(invite.invite_expires_at) < new Date())
+      return res.status(400).json({ message: "Invitation link expired." });
 
-    if (invite.status !== "invited") {
-      return res.status(400).json({ message: "Invitation is no longer valid." });
-    }
+    if (invite.status !== "invited")
+      return res.status(400).json({ message: "Invitation invalid." });
 
-    return res.json({
-      id: invite.id,
-      email: invite.email,
-      message: "Invite token valid.",
-    });
+    res.json({ id: invite.id, email: invite.email });
   } catch (err) {
-    console.error("❌ INVITE VALIDATE ERROR:", err);
-    res.status(500).json({ message: "Failed to validate invitation" });
+    console.error(err);
+    res.status(500).json({ message: "Failed validating invite" });
   }
 });
 
-router.get("/stats", async (req, res) => {
-  try {
-    const pool = await getPool();
-
-    // FIXED: Count all admin roles
-    const [adminRows] = await pool.query(
-      "SELECT COUNT(*) AS count FROM users WHERE role IN ('admin', 'superadmin')"
-    );
-
-    const [userRows] = await pool.query(
-      "SELECT COUNT(*) AS count FROM users WHERE role = 'user'"
-    );
-
-    res.json({
-      adminCount: adminRows[0].count,
-      userCount: userRows[0].count,
-    });
-  } catch (error) {
-    console.error("🔥 STATS ERROR:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-
-
-
-// Complete registration from invite
-// POST /api/admin/register-from-invite
-// body: { token, username, firstname, lastname, password, contact_number, address }
+/* Registration from invite */
 router.post("/register-from-invite", async (req, res) => {
   try {
     const { token, username, firstname, lastname, password, contact_number, address } =
       req.body;
 
-    if (!token || !username || !firstname || !lastname || !password) {
-      return res.status(400).json({ message: "All required fields must be filled." });
-    }
-
-    if (password.length < 6) {
-      return res.status(400).json({ message: "Password must be at least 6 characters." });
-    }
+    if (!token || !username || !firstname || !lastname || !password)
+      return res.status(400).json({ message: "Missing fields." });
 
     const pool = await getPool();
 
-    // Validate invite token
     const [rows] = await pool.query(
-      `
-      SELECT id, email, status, invite_expires_at
-      FROM users
-      WHERE invite_token = ? AND role = 'admin'
-      `,
+      `SELECT id, email, status, invite_expires_at
+       FROM users WHERE invite_token = ? AND role = 'admin'`,
       [token]
     );
 
-    if (rows.length === 0) {
-      return res.status(400).json({ message: "Invalid or used invitation link." });
-    }
+    if (!rows.length)
+      return res.status(400).json({ message: "Invalid or expired invitation." });
 
     const user = rows[0];
 
-    if (user.invite_expires_at && new Date(user.invite_expires_at) < new Date()) {
-      return res.status(400).json({ message: "Invitation link has expired." });
-    }
-
-    if (user.status !== "invited") {
-      return res.status(400).json({ message: "This invitation is no longer valid." });
-    }
-
-    // Ensure username is unique
-    const [conflict] = await pool.query(
-      "SELECT id FROM users WHERE username = ? AND id <> ?",
-      [username, user.id]
-    );
-    if (conflict.length > 0) {
-      return res.status(400).json({ message: "Username is already taken." });
-    }
+    if (new Date(user.invite_expires_at) < new Date())
+      return res.status(400).json({ message: "Invitation expired." });
 
     const hashed = await bcrypt.hash(password, 10);
     const otp = generateOtp();
-    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+    const expires = new Date(Date.now() + 10 * 60 * 1000);
 
     await pool.query(
-      `
-      UPDATE users SET
-        username = ?, firstname = ?, lastname = ?,
-        password = ?, contact_number = ?, address = ?,
-        status = 'pending', otp_code = ?, otp_expires_at = ?, 
-        verification_method = 'email'
-      WHERE id = ?
-      `,
+      `UPDATE users SET
+        username=?, firstname=?, lastname=?, password=?,
+        contact_number=?, address=?,
+        status='pending', otp_code=?, otp_expires_at=?, verification_method='email'
+       WHERE id=?`,
       [
         username,
         firstname,
@@ -253,157 +157,117 @@ router.post("/register-from-invite", async (req, res) => {
         contact_number || null,
         address || null,
         otp,
-        otpExpires,
+        expires,
         user.id,
       ]
     );
 
-    await sendAdminOtpEmail(user.email, firstname, otp);
+    await sendEmail(
+      user.email,
+      "Your Admin Verification Code",
+      `<p>Hello ${firstname},</p><p>Your OTP is:</p><h2>${otp}</h2>`
+    );
 
-    return res.json({
-      message: "Registration data saved. OTP sent to your email.",
-      email: user.email,
-    });
+    res.json({ message: "OTP sent.", email: user.email });
   } catch (err) {
-    console.error("❌ REGISTER FROM INVITE ERROR:", err);
-    res.status(500).json({ message: "Failed to complete registration" });
+    console.error(err);
+    res.status(500).json({ message: "Failed registration" });
   }
 });
 
-// Verify OTP for admin account (invite flow)
-// POST /api/admin/verify-otp
-// body: { email, otp }
+/* Verify OTP for admin */
 router.post("/verify-otp", async (req, res) => {
   try {
     const { email, otp } = req.body;
-    if (!email || !otp) {
-      return res.status(400).json({ message: "Email and OTP are required." });
-    }
+    if (!email || !otp)
+      return res.status(400).json({ message: "Missing OTP or email." });
 
     const pool = await getPool();
+
     const [rows] = await pool.query(
-      `
-      SELECT id, email, otp_code, otp_expires_at, status, role
-      FROM users
-      WHERE email = ? AND role IN ('admin','superadmin')
-      `,
+      `SELECT id, otp_code, otp_expires_at, role FROM users
+       WHERE email = ? AND role IN ('admin','superadmin')`,
       [email]
     );
 
-    if (rows.length === 0) {
+    if (!rows.length)
       return res.status(404).json({ message: "Admin not found." });
-    }
 
     const user = rows[0];
 
-    if (!user.otp_code) {
-      return res.status(400).json({ message: "No active OTP found." });
-    }
-
-    // 🔑 FIX: compare as strings to avoid number vs string mismatch
-    if (String(user.otp_code) !== String(otp)) {
+    if (String(user.otp_code) !== String(otp))
       return res.status(400).json({ message: "Invalid OTP." });
-    }
 
-    if (user.otp_expires_at && new Date(user.otp_expires_at) < new Date()) {
-      return res.status(400).json({ message: "OTP has expired." });
-    }
+    if (new Date(user.otp_expires_at) < new Date())
+      return res.status(400).json({ message: "OTP expired." });
 
     await pool.query(
-      `
-      UPDATE users
-      SET is_verified = 1,
-          is_approved = 1,
-          status = 'active',
-          otp_code = NULL,
-          otp_expires_at = NULL,
-          invite_token = NULL,
-          invite_expires_at = NULL,
-          invited = 1
-      WHERE id = ?
-      `,
+      `UPDATE users SET 
+        is_verified=1, is_approved=1, status='active',
+        otp_code=NULL, otp_expires_at=NULL,
+        invite_token=NULL, invite_expires_at=NULL
+       WHERE id=?`,
       [user.id]
     );
 
-    const token = jwt.sign(
-      { id: user.id, role: user.role },
-      JWT_SECRET,
-      { expiresIn: "1d" }
-    );
-
-    return res.json({
-      message: "Admin account verified and activated.",
-      token,
-      user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-      },
+    const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, {
+      expiresIn: "1d",
     });
+
+    res.json({ message: "Account verified.", token });
   } catch (err) {
-    console.error("❌ VERIFY OTP ERROR:", err);
-    res.status(500).json({ message: "Failed to verify OTP" });
+    console.error(err);
+    res.status(500).json({ message: "OTP verification failed" });
   }
 });
 
-// Resend OTP for admin verification
-// POST /api/admin/resend-otp
-// body: { email }
+/* Resend Admin OTP */
 router.post("/resend-otp", async (req, res) => {
   try {
     const { email } = req.body;
-    if (!email) {
-      return res.status(400).json({ message: "Email is required." });
-    }
+    if (!email)
+      return res.status(400).json({ message: "Email required." });
 
     const pool = await getPool();
+
     const [rows] = await pool.query(
-      `
-      SELECT id, email, firstname, role, is_verified
-      FROM users
-      WHERE email = ? AND role IN ('admin', 'superadmin')
-      `,
+      `SELECT id, firstname FROM users 
+       WHERE email=? AND role IN ('admin','superadmin')`,
       [email]
     );
 
-    if (rows.length === 0) {
+    if (!rows.length)
       return res.status(404).json({ message: "Admin not found." });
-    }
 
     const user = rows[0];
 
-    if (user.is_verified) {
-      return res.status(400).json({ message: "Account already verified." });
-    }
-
     const otp = generateOtp();
-    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+    const expires = new Date(Date.now() + 10 * 60 * 1000);
 
     await pool.query(
-      `
-      UPDATE users
-      SET otp_code = ?, otp_expires_at = ?
-      WHERE id = ?
-      `,
-      [otp, otpExpires, user.id]
+      `UPDATE users SET otp_code=?, otp_expires_at=? WHERE id=?`,
+      [otp, expires, user.id]
     );
 
-    await sendAdminOtpEmail(user.email, user.firstname, otp);
+    await sendEmail(
+      email,
+      "Your New Admin OTP",
+      `<p>Hello ${user.firstname},</p><p>Your new OTP is:</p><h2>${otp}</h2>`
+    );
 
-    res.json({ message: "OTP resent successfully." });
+    res.json({ message: "OTP resent." });
   } catch (err) {
-    console.error("❌ RESEND ADMIN OTP ERROR:", err);
+    console.error(err);
     res.status(500).json({ message: "Failed to resend OTP" });
   }
 });
 
-/* ---------------------------------------------------
+/* ============================================================
    PROTECTED ROUTES (JWT REQUIRED)
---------------------------------------------------- */
-
+============================================================ */
 router.use(authRequired);
 
-// GET /api/admin/list
+/* Admin list */
 router.get("/list", async (req, res) => {
   try {
     const pool = await getPool();
@@ -415,38 +279,25 @@ router.get("/list", async (req, res) => {
     const search = req.query.search ? `%${req.query.search}%` : "%%";
     const status = req.query.status || "all";
 
-    let filterStatus = "";
-    if (status === "active") filterStatus = "AND status = 'active'";
-    if (status === "pending") filterStatus = "AND status = 'pending'";
-    if (status === "disabled") filterStatus = "AND status = 'disabled'";
-    if (status === "invited") filterStatus = "AND status = 'invited'";
+    let filter = "";
+    if (status !== "all") filter = `AND status='${status}'`;
 
     const [count] = await pool.query(
-      `
-        SELECT COUNT(*) AS total
-        FROM users
-        WHERE role IN ('admin','superadmin')
-        AND (
-          username LIKE ? OR firstname LIKE ? OR lastname LIKE ? OR email LIKE ?
-        )
-        ${filterStatus}
-      `,
+      `SELECT COUNT(*) AS total
+       FROM users
+       WHERE role IN ('admin','superadmin')
+       AND (username LIKE ? OR firstname LIKE ? OR lastname LIKE ? OR email LIKE ?)
+       ${filter}`,
       [search, search, search, search]
     );
 
     const [rows] = await pool.query(
-      `
-        SELECT id, username, firstname, lastname, email, role, status,
-               contact_number, address, profile_image, created_at
-        FROM users
-        WHERE role IN ('admin','superadmin')
-        AND (
-          username LIKE ? OR firstname LIKE ? OR lastname LIKE ? OR email LIKE ?
-        )
-        ${filterStatus}
-        ORDER BY created_at DESC
-        LIMIT ? OFFSET ?
-      `,
+      `SELECT * FROM users
+       WHERE role IN ('admin','superadmin')
+       AND (username LIKE ? OR firstname LIKE ? OR lastname LIKE ? OR email LIKE ?)
+       ${filter}
+       ORDER BY created_at DESC
+       LIMIT ? OFFSET ?`,
       [search, search, search, search, limit, offset]
     );
 
@@ -457,45 +308,50 @@ router.get("/list", async (req, res) => {
       limit,
     });
   } catch (err) {
-    console.error("❌ LIST ERROR:", err);
-    res.status(500).json({ message: "Failed to fetch admins" });
+    console.error(err);
+    res.status(500).json({ message: "Failed fetching admins" });
   }
 });
 
-// POST /api/admin/invite  (protected)
+/* Send Admin Invite */
 router.post("/invite", async (req, res) => {
   try {
-    const pool = await getPool();
     const { email } = req.body;
-
     if (!email) return res.status(400).json({ message: "Email required" });
 
-    const [exists] = await pool.query("SELECT id FROM users WHERE email = ?", [email]);
-    if (exists.length > 0)
+    const pool = await getPool();
+    const [exists] = await pool.query("SELECT id FROM users WHERE email=?", [email]);
+
+    if (exists.length)
       return res.status(400).json({ message: "Email already registered." });
 
     const token = crypto.randomBytes(32).toString("hex");
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    const [insert] = await pool.query(
-      `
-        INSERT INTO users 
-        (email, role, status, invite_token, invite_expires_at, is_verified, invited, is_approved)
-        VALUES (?, 'admin', 'invited', ?, ?, 0, 1, 0)
-      `,
+    await pool.query(
+      `INSERT INTO users
+       (email, role, status, invite_token, invite_expires_at, is_verified, invited, is_approved)
+       VALUES (?, 'admin', 'invited', ?, ?, 0, 1, 0)`,
       [email, token, expires]
     );
 
-    await sendInviteLink(email, token);
+    const inviteUrl = `${process.env.FRONTEND_URL}/admin/register?token=${token}`;
 
-    res.json({ message: "Invitation sent successfully.", id: insert.insertId });
+    await sendEmail(
+      email,
+      "Admin Invitation - Discover Mansalay",
+      `<p>Hello,</p><p>You are invited to join as Admin.</p>
+       <p><a href="${inviteUrl}">Complete Registration</a></p>`
+    );
+
+    res.json({ message: "Invite sent." });
   } catch (err) {
-    console.error("❌ INVITE ERROR:", err);
-    res.status(500).json({ message: "Failed to send admin invite" });
+    console.error(err);
+    res.status(500).json({ message: "Failed sending invite" });
   }
 });
 
-// PUT /api/admin/admin/:id (update admin)
+/* Update admin */
 router.put("/admin/:id", upload.single("profile_image"), async (req, res) => {
   try {
     const pool = await getPool();
@@ -513,24 +369,15 @@ router.put("/admin/:id", upload.single("profile_image"), async (req, res) => {
       existing_image,
     } = req.body;
 
-    if (!username || !firstname || !lastname || !email)
-      return res.status(400).json({ message: "Missing required fields" });
-
     const [found] = await pool.query(
       "SELECT * FROM users WHERE id=? AND role IN ('admin','superadmin')",
       [id]
     );
-    if (found.length === 0)
+
+    if (!found.length)
       return res.status(404).json({ message: "Admin not found" });
 
     const admin = found[0];
-
-    const [conflict] = await pool.query(
-      "SELECT id FROM users WHERE (username = ? OR email = ?) AND id <> ?",
-      [username, email, id]
-    );
-    if (conflict.length > 0)
-      return res.status(400).json({ message: "Username or email already used" });
 
     let finalImage = admin.profile_image;
     if (req.file) {
@@ -540,19 +387,12 @@ router.put("/admin/:id", upload.single("profile_image"), async (req, res) => {
       finalImage = existing_image;
     }
 
-    let finalRole = admin.role;
-    if (req.user.role === "superadmin" && role) finalRole = role;
-
-    let finalStatus = status || admin.status;
-
     await pool.query(
-      `
-        UPDATE users SET 
-          username=?, firstname=?, lastname=?, email=?,
-          contact_number=?, address=?, profile_image=?,
-          role=?, status=?
-        WHERE id=?
-      `,
+      `UPDATE users SET
+        username=?, firstname=?, lastname=?, email=?,
+        contact_number=?, address=?, profile_image=?,
+        role=?, status=?
+       WHERE id=?`,
       [
         username,
         firstname,
@@ -561,8 +401,8 @@ router.put("/admin/:id", upload.single("profile_image"), async (req, res) => {
         contact_number || null,
         address || null,
         finalImage,
-        finalRole,
-        finalStatus,
+        role || admin.role,
+        status || admin.status,
         id,
       ]
     );
@@ -571,35 +411,12 @@ router.put("/admin/:id", upload.single("profile_image"), async (req, res) => {
 
     res.json(normalizeImagePath(updated[0]));
   } catch (err) {
-    console.error("❌ UPDATE ERROR:", err);
-    res.status(500).json({ message: "Failed to update admin" });
+    console.error(err);
+    res.status(500).json({ message: "Failed updating admin" });
   }
 });
 
-// PUT /api/admin/admin/:id/password
-router.put("/admin/:id/password", async (req, res) => {
-  try {
-    const pool = await getPool();
-    const { password } = req.body;
-
-    if (!password || password.length < 6)
-      return res.status(400).json({ message: "Password too weak" });
-
-    const hashed = await bcrypt.hash(password, 10);
-
-    await pool.query("UPDATE users SET password=? WHERE id=?", [
-      hashed,
-      req.params.id,
-    ]);
-
-    res.json({ message: "Password updated" });
-  } catch (err) {
-    console.error("❌ PASSWORD ERROR:", err);
-    res.status(500).json({ message: "Failed to update password" });
-  }
-});
-
-// DELETE /api/admin/admin/:id
+/* Delete admin */
 router.delete("/admin/:id", async (req, res) => {
   try {
     const pool = await getPool();
@@ -609,18 +426,11 @@ router.delete("/admin/:id", async (req, res) => {
       "SELECT * FROM users WHERE id=? AND role IN ('admin','superadmin')",
       [id]
     );
-    if (rows.length === 0)
+
+    if (!rows.length)
       return res.status(404).json({ message: "Admin not found" });
 
     const admin = rows[0];
-
-    if (admin.role === "superadmin") {
-      const [count] = await pool.query(
-        "SELECT COUNT(*) AS total FROM users WHERE role='superadmin'"
-      );
-      if (count[0].total <= 1)
-        return res.status(400).json({ message: "Cannot delete last superadmin" });
-    }
 
     if (admin.profile_image) deleteFileIfExists(admin.profile_image);
 
@@ -628,8 +438,8 @@ router.delete("/admin/:id", async (req, res) => {
 
     res.json({ message: "Admin deleted" });
   } catch (err) {
-    console.error("❌ DELETE ERROR:", err);
-    res.status(500).json({ message: "Failed to delete admin" });
+    console.error(err);
+    res.status(500).json({ message: "Failed deleting admin" });
   }
 });
 

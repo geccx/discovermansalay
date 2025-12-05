@@ -95,14 +95,6 @@ export default function DashboardOverview() {
     const sortedDates = Object.keys(byDate).sort().slice(-7);
     setChartData(sortedDates.map((d) => ({ date: d, visits: byDate[d] })));
 
-    // Browser pie
-    const browserMap = {};
-    data.forEach((v) => {
-      const b = v.browser || "Unknown";
-      browserMap[b] = (browserMap[b] || 0) + 1;
-    });
-    setBrowserData(Object.entries(browserMap).map(([name, value]) => ({ name, value })));
-
     // Device pie
     const deviceMap = {};
     data.forEach((v) => {
