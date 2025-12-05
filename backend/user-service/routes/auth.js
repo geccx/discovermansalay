@@ -2,7 +2,7 @@ const express = require("express");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const rateLimit = require("express-rate-limit");
-const nodemailer = require("nodemailer");
+const brevo = require("@getbrevo/brevo");
 const { getPool } = require("../../config/db");
 const { authRequired } = require("../middleware/authMiddleware");
 
@@ -15,34 +15,28 @@ const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_key";
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
 /* ---------------------------------------------
-   EMAIL (Brevo No-DNS Mode)
+   BREVO EMAIL API (Recommended for Railway)
 --------------------------------------------- */
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT) || 587,
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+const brevoClient = new brevo.TransactionalEmailsApi();
+brevoClient.setApiKey(
+  brevo.TransactionalEmailsApiApiKeys.apiKey,
+  process.env.BREVO_API_KEY
+);
 
 async function sendEmail(to, subject, html) {
   try {
-    await transporter.sendMail({
-      from: process.env.SMTP_FROM, // MUST be @newsletter.brevo.com
-      to,
+    await brevoClient.sendTransacEmail({
+      sender: { email: process.env.SMTP_FROM, name: "Discover Mansalay" },
+      to: [{ email: to }],
       subject,
-      html,
+      htmlContent: html,
     });
+
     console.log("📩 Email sent:", to);
   } catch (err) {
     console.error("❌ Email failed:", err.message);
   }
 }
-
-
-const FROM_EMAIL = process.env.SMTP_FROM;
 
 /* ---------------------------------------------
    RATE LIMITER
@@ -76,20 +70,6 @@ function isStrongPassword(pwd) {
   return PASSWORD_REGEX.test(pwd);
 }
 
-async function sendEmail(to, subject, html) {
-  try {
-    await transporter.sendMail({
-      from: FROM_EMAIL,
-      to,
-      subject,
-      html,
-    });
-    console.log("📩 Email sent:", to);
-  } catch (err) {
-    console.error("❌ Email failed:", err.message);
-  }
-}
-
 /* ============================================================
    USER REGISTRATION
 ============================================================ */
@@ -109,7 +89,6 @@ router.post("/register", async (req, res) => {
 
   try {
     const pool = await getPool();
-
     const [existing] = await pool.query(
       "SELECT * FROM users WHERE email = ? OR username = ?",
       [email, username]
@@ -128,7 +107,7 @@ router.post("/register", async (req, res) => {
       [username, email, hashed, firstname, lastname || null, otp, expires]
     );
 
-    sendEmail(
+    await sendEmail(
       email,
       "Your Discover Mansalay verification code",
       `<p>Hello ${firstname},</p><p>Your OTP is:</p><h2>${otp}</h2>`
@@ -144,7 +123,7 @@ router.post("/register", async (req, res) => {
 });
 
 /* ============================================================
-   VERIFY OTP (USER)
+   VERIFY OTP
 ============================================================ */
 router.post("/verify-otp", async (req, res) => {
   const { emailOrUsername, otp } = req.body;
@@ -186,7 +165,7 @@ router.post("/verify-otp", async (req, res) => {
 });
 
 /* ============================================================
-   LOGIN (USER + ADMIN 2FA)
+   LOGIN (USER + ADMIN OTP)
 ============================================================ */
 router.post("/login", async (req, res) => {
   const { identifier, password } = req.body;
@@ -215,9 +194,7 @@ router.post("/login", async (req, res) => {
     if (!match)
       return res.status(401).json({ message: "Incorrect password." });
 
-    /* -----------------------------------------
-       ADMIN / SUPERADMIN OTP
-    ----------------------------------------- */
+    /* Admin - requires OTP */
     if (user.role === "admin" || user.role === "superadmin") {
       const otp = generateOtp();
       const expires = new Date(Date.now() + 5 * 60 * 1000);
@@ -227,7 +204,7 @@ router.post("/login", async (req, res) => {
         [otp, expires, user.id]
       );
 
-      sendEmail(
+      await sendEmail(
         user.email,
         "Your Admin Login Verification Code",
         `<p>Hello ${user.firstname},</p><p>Your admin login OTP is:</p><h2>${otp}</h2>`
@@ -240,9 +217,7 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    /* -----------------------------------------
-       NORMAL USER LOGIN
-    ----------------------------------------- */
+    /* Normal user login */
     const token = jwt.sign(
       { id: user.id, role: user.role },
       JWT_SECRET,
@@ -311,46 +286,6 @@ router.post("/admin/verify-otp", async (req, res) => {
   } catch (err) {
     console.error("Admin Verify OTP Error:", err);
     res.status(500).json({ message: "Error verifying admin OTP." });
-  }
-});
-
-/* ============================================================
-   ADMIN RESEND OTP
-============================================================ */
-router.post("/admin/resend-otp", async (req, res) => {
-  const { userId } = req.body;
-
-  if (!userId)
-    return res.status(400).json({ message: "User ID required." });
-
-  try {
-    const pool = await getPool();
-    const [rows] = await pool.query("SELECT * FROM users WHERE id = ?", [
-      userId,
-    ]);
-
-    if (!rows.length)
-      return res.status(404).json({ message: "User not found." });
-
-    const user = rows[0];
-    const otp = generateOtp();
-    const expires = new Date(Date.now() + 5 * 60 * 1000);
-
-    await pool.query(
-      `UPDATE users SET admin_otp_code = ?, admin_otp_expires_at = ? WHERE id = ?`,
-      [otp, expires, userId]
-    );
-
-    sendEmail(
-      user.email,
-      "Your NEW Admin Login Verification Code",
-      `<p>Hello ${user.firstname},</p><p>Your new admin login OTP is:</p><h2>${otp}</h2>`
-    );
-
-    res.json({ message: "New OTP sent to your email." });
-  } catch (err) {
-    console.error("Admin Resend OTP Error:", err);
-    res.status(500).json({ message: "Failed to resend OTP." });
   }
 });
 
