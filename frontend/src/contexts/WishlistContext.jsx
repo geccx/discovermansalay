@@ -47,14 +47,11 @@ export function WishlistProvider({ children }) {
 
     fetch(`${API_BASE}/api/user/wishlist/${encodeURIComponent(username)}`)
       .then((res) => res.json())
-      .then((data) => {
-        if (!Array.isArray(data)) {
-          console.error("Wishlist API did not return array:", data);
-          dispatch({ type: "SET_ITEMS", payload: [] });
-          return;
-        }
-        dispatch({ type: "SET_ITEMS", payload: data });
-      })
+.then((data) => {
+  const items = Array.isArray(data.wishlist) ? data.wishlist : [];
+  dispatch({ type: "SET_ITEMS", payload: items });
+})
+
       .catch((err) => {
         console.error("Wishlist Fetch Error:", err);
         toast.error("Failed to load wishlist.");
