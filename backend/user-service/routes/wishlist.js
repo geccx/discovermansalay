@@ -19,20 +19,12 @@ router.get("/:username", async (req, res) => {
       [username]
     );
 
-    // Always return consistent object format
-    return res.json({
-      success: true,
-      wishlist: rows || []
-    });
-
+    // Frontend expects ARRAY
+    return res.json(rows || []);
   } catch (err) {
     console.error("Wishlist Fetch Error:", err);
-
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch wishlist",
-      error: err.message
-    });
+    // On error, still return an array so frontend doesn't crash
+    return res.status(500).json([]);
   }
 });
 
@@ -59,23 +51,13 @@ router.post("/", async (req, res) => {
       return res.status(409).json({ message: "Item already in wishlist" });
     }
 
-    const [result] = await pool.query(
+    await pool.query(
       `INSERT INTO wishlist (username, item_id, name, category, image_path)
        VALUES (?, ?, ?, ?, ?)`,
       [username, item_id, name, category, image_path]
     );
 
-    res.status(201).json({
-      message: "Item added to wishlist",
-      item: {
-        id: result.insertId,
-        username,
-        item_id,
-        name,
-        category,
-        image_path,
-      },
-    });
+    res.status(201).json({ message: "Item added to wishlist" });
   } catch (err) {
     console.error("Wishlist Add Error:", err);
     res.status(500).json({ message: "Failed to add item" });

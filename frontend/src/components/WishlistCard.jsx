@@ -3,8 +3,11 @@ import { Trash2, MapPin, ArrowUpRight } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const WishlistCard = ({ item, onRemove, API_BASE }) => {
-  const imageUrl = item.image_path
-    ? `${API_BASE}/${item.image_path}`
+  // Normalize image path (remove double or leading slashes)
+  const cleanPath = item.image_path?.replace(/^\/+/, "");
+
+  const imageUrl = cleanPath
+    ? `${API_BASE}/${cleanPath}`
     : "https://via.placeholder.com/300x200?text=No+Image";
 
   return (
