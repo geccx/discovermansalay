@@ -23,27 +23,37 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 /* ---------------------------------------------
-   CORS CONFIG
+   CORS CONFIG (FIXED)
 --------------------------------------------- */
+
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
   "http://127.0.0.1:5173",
   "http://127.0.0.1:5174",
-  process.env.FRONTEND_URL,
-  process.env.RAILWAY_PUBLIC_DOMAIN,
+  process.env.FRONTEND_URL,           // your deployed frontend
+  process.env.RAILWAY_PUBLIC_DOMAIN,  // backend public domain
 ].filter(Boolean);
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+      // Allow server-to-server or curl/no-origin
+      if (!origin) return callback(null, true);
+
+      const isAllowed = allowedOrigins.some((url) =>
+        origin.startsWith(url)
+      );
+
+      if (isAllowed) return callback(null, true);
+
       console.warn("❌ CORS blocked:", origin);
       callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
   })
 );
+
 
 app.use((req, res, next) => {
   console.log(`[${req.method}] ${req.originalUrl}`);
