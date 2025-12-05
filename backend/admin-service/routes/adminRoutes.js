@@ -267,17 +267,28 @@ router.post("/resend-otp", async (req, res) => {
 ============================================================ */
 router.use(authRequired);
 
-/* Admin Stats (PROTECTED) */
 router.get("/stats", async (req, res) => {
   try {
     const pool = await getPool();
 
+    // Count ACTIVE & VERIFIED admins
     const [adminRows] = await pool.query(
-      "SELECT COUNT(*) AS count FROM users WHERE role IN ('admin','superadmin')"
+      `SELECT COUNT(*) AS count 
+       FROM users 
+       WHERE role IN ('admin','superadmin') 
+       AND is_verified = 1
+       AND is_approved = 1
+       AND status = 'active'`
     );
 
+    // Count ACTIVE & VERIFIED users
     const [userRows] = await pool.query(
-      "SELECT COUNT(*) AS count FROM users WHERE role='user'"
+      `SELECT COUNT(*) AS count 
+       FROM users 
+       WHERE role = 'user'
+       AND is_verified = 1
+       AND is_approved = 1
+       AND status = 'active'`
     );
 
     res.json({

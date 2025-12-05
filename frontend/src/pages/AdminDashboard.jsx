@@ -47,7 +47,7 @@ const AdminDashboard = () => {
   };
 
   const goToProfile = () => {
-    navigate("/adminprofile");
+    console.log("Admin profile page not implemented yet.");
   };
 
   return (
@@ -150,12 +150,13 @@ const AdminDashboard = () => {
             </button>
             <div className="profile-section">
               <img
-                src={profileIcon}
-                alt="Profile"
-                className="icon"
-                onClick={goToProfile}
-                style={{ cursor: "pointer" }}
-              />
+  src={profileIcon}
+  alt="Profile"
+  className="icon"
+  onClick={goToProfile}
+  style={{ cursor: "pointer" }}
+/>
+
               <button onClick={handleLogout} className="logout-btn icon-btn">
                 <img src={logoutIcon} alt="Logout" className="icon" />
               </button>
