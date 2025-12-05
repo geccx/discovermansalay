@@ -41,7 +41,7 @@ export default function Login() {
         }
 
         if (storedUser.role === "admin" || storedUser.role === "superadmin") {
-          navigate("/admin", { replace: true });
+          navigate("/admin/dashboard", { replace: true });
         } else {
           navigate("/", { replace: true });
         }
@@ -90,7 +90,7 @@ export default function Login() {
       toast.success(`Welcome, ${user.firstname || user.username}!`);
 
       if (user.role === "admin" || user.role === "superadmin") {
-        navigate("/admin", { replace: true });
+        navigate("/admin/dashboard", { replace: true });
       } else {
         navigate("/", { replace: true });
       }
