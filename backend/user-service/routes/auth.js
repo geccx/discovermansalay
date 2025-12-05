@@ -14,8 +14,11 @@ const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_key";
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
+/* ---------------------------------------------
+   EMAIL (Brevo No-DNS Mode)
+--------------------------------------------- */
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST, // smtp-relay.brevo.com
+  host: process.env.SMTP_HOST,
   port: Number(process.env.SMTP_PORT) || 587,
   secure: false,
   auth: {
@@ -23,6 +26,21 @@ const transporter = nodemailer.createTransport({
     pass: process.env.SMTP_PASS,
   },
 });
+
+async function sendEmail(to, subject, html) {
+  try {
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM, // MUST be @newsletter.brevo.com
+      to,
+      subject,
+      html,
+    });
+    console.log("📩 Email sent:", to);
+  } catch (err) {
+    console.error("❌ Email failed:", err.message);
+  }
+}
+
 
 const FROM_EMAIL = process.env.SMTP_FROM;
 
