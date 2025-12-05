@@ -23,7 +23,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ---------------------------------------------
-// CORS CONFIG (Auto detects allowed origins)
+// CORS CONFIG 
 // ---------------------------------------------
 const allowedOrigins = [
   "http://localhost:5173",
@@ -32,7 +32,7 @@ const allowedOrigins = [
   "http://127.0.0.1:5174",
   process.env.FRONTEND_URL,
   process.env.RAILWAY_PUBLIC_DOMAIN,
-].filter(Boolean); // remove undefined
+].filter(Boolean);
 
 app.use(
   cors({
@@ -46,7 +46,7 @@ app.use(
 );
 
 // ---------------------------------------------
-// REQUEST LOGGER (Production Friendly)
+// REQUEST LOGGER
 // ---------------------------------------------
 app.use((req, res, next) => {
   console.log(`[${req.method}] ${req.originalUrl}`);
@@ -54,7 +54,7 @@ app.use((req, res, next) => {
 });
 
 // ---------------------------------------------
-// DATABASE INIT — WAIT FOR CONNECTION BEFORE SERVER STARTS
+// DATABASE INIT
 // ---------------------------------------------
 const { getPool } = require("./config/db");
 
@@ -69,7 +69,7 @@ async function initDatabase() {
 }
 
 // ---------------------------------------------
-// STATIC UPLOADS (Safe for Railway + Local)
+// STATIC UPLOADS
 // ---------------------------------------------
 const uploadPaths = [
   path.join(__dirname, "uploads"),
@@ -101,7 +101,7 @@ app.use(
 );
 
 // ---------------------------------------------
-// SAFE SERVICE LOADER (Prevents full API crash)
+// SERVICE LOADER FUNCTION
 // ---------------------------------------------
 function loadService(name, mountPath, loaderFn) {
   try {
@@ -114,7 +114,14 @@ function loadService(name, mountPath, loaderFn) {
 }
 
 // ---------------------------------------------
-// LOAD SERVICES (Fault-Tolerant)
+// LOAD PUBLIC INVITE ROUTES (NO AUTH)
+// ---------------------------------------------
+loadService("Public Invite Service", "/api/invite", () =>
+  require("./public/publicInviteRoutes")
+);
+
+// ---------------------------------------------
+// LOAD ADMIN SERVICES (Protected)
 // ---------------------------------------------
 loadService("Admin Service", "/api/admin", () =>
   require("./admin-service/routes/adminRoutes")
@@ -124,6 +131,9 @@ loadService("Admin User Service", "/api/admin/users", () =>
   require("./admin-service/routes/userRoutes")
 );
 
+// ---------------------------------------------
+// CMS SERVICES
+// ---------------------------------------------
 loadService("CMS Experience", "/api/cms/experience", () =>
   require("./cms-service/routes/experience")
 );
@@ -144,18 +154,30 @@ loadService("CMS Navbar", "/api/cms/navbar", () =>
   require("./cms-service/routes/navbar")
 );
 
+// ---------------------------------------------
+// DESTINATIONS SERVICE
+// ---------------------------------------------
 loadService("Destinations Service", "/api/destinations", () =>
   require("./destination-service/routes/destinations")
 );
 
+// ---------------------------------------------
+// MAP SERVICE
+// ---------------------------------------------
 loadService("Map Service", "/map/touristspots", () =>
   require("./map-service/routes/touristSpots")
 );
 
+// ---------------------------------------------
+// SEARCH SERVICE
+// ---------------------------------------------
 loadService("Search Service", "/api/search", () =>
   require("./searchFiltering-service/routes/search")
 );
 
+// ---------------------------------------------
+// AUTH & WISHLIST
+// ---------------------------------------------
 loadService("Auth Service", "/api/user", () =>
   require("./user-service/routes/auth")
 );
@@ -165,7 +187,7 @@ loadService("Wishlist Service", "/api/user/wishlist", () =>
 );
 
 // ---------------------------------------------
-// HEALTH CHECK (Railway Requirement)
+// HEALTH CHECK
 // ---------------------------------------------
 app.get("/api/health", async (req, res) => {
   try {
@@ -178,7 +200,7 @@ app.get("/api/health", async (req, res) => {
 });
 
 // ---------------------------------------------
-// ROOT ENDPOINT
+// ROOT API
 // ---------------------------------------------
 app.get("/", (req, res) => {
   res.json({
@@ -211,10 +233,10 @@ app.use((err, req, res, next) => {
 });
 
 // ---------------------------------------------
-// START SERVER (After DB Initializes)
+// START SERVER
 // ---------------------------------------------
 async function startServer() {
-  await initDatabase(); // Ensures DB connection success/failure is logged
+  await initDatabase();
 
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {

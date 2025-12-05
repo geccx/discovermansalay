@@ -53,10 +53,25 @@ const Navbar = () => {
   }, [location.pathname]);
 
   // Load user from storage
-  useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) setUser(JSON.parse(storedUser));
-  }, []);
+ useEffect(() => {
+  try {
+    const raw = localStorage.getItem("user");
+
+    if (!raw || raw === "undefined" || raw === "null") {
+      setUser(null);
+      return;
+    }
+
+    const parsed = JSON.parse(raw);
+    setUser(parsed);
+  } catch (err) {
+    console.error("❌ Invalid user JSON in localStorage:", err);
+    setUser(null);
+    localStorage.removeItem("user"); // 🧹 clean corrupted value
+  }
+}, []);
+
+
 
   // Close profile dropdown when clicking outside
   useEffect(() => {

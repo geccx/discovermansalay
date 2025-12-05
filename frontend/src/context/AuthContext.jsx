@@ -1,44 +1,81 @@
 import { createContext, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 
 export const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  const navigate = useNavigate();
-
-  const [user, setUser] = useState(() => {
-    const stored = localStorage.getItem("user");
-    return stored ? JSON.parse(stored) : null;
-  });
-
-  const [token, setToken] = useState(() => localStorage.getItem("token") || null);
-
-  const login = (userData, token) => {
-    localStorage.setItem("user", JSON.stringify(userData));
-    localStorage.setItem("token", token);
-
-    setUser(userData);
-    setToken(token);
+  const safeParse = (value) => {
+    try {
+      if (!value || value === "undefined" || value === "null") return null;
+      return JSON.parse(value);
+    } catch (e) {
+      console.error("❌ Invalid JSON in localStorage:", value);
+      return null;
+    }
   };
 
+  // Initialize State
+  const [user, setUser] = useState(() => safeParse(localStorage.getItem("user")));
+  const [token, setToken] = useState(() => {
+    const t = localStorage.getItem("token");
+    return t && t !== "undefined" && t !== "null" ? t : null;
+  });
+
+  // ----------------------------------------------------------------
+  // LOGIN — store user + token and sync React state immediately
+  // ----------------------------------------------------------------
+  const login = (userData, jwtToken) => {
+    try {
+      localStorage.setItem("user", JSON.stringify(userData));
+      localStorage.setItem("token", jwtToken);
+
+      setUser(userData);
+      setToken(jwtToken);
+    } catch (err) {
+      console.error("❌ Failed to save auth data:", err);
+    }
+  };
+
+  // ----------------------------------------------------------------
+  // LOGOUT — full cleanup for both admin and user
+  // ----------------------------------------------------------------
   const logout = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("token");
 
     setUser(null);
     setToken(null);
-
-    navigate("/login");
   };
 
-  // Auto-redirect if token exists but no user state
+  // ----------------------------------------------------------------
+  // Auto-sync AuthContext on page refresh
+  // Runs only once at startup
+  // ----------------------------------------------------------------
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    const storedToken = localStorage.getItem("token");
+    try {
+      const storedUser = safeParse(localStorage.getItem("user"));
+      const storedToken = localStorage.getItem("token");
 
-    if (storedUser && storedToken && !user) {
-      setUser(JSON.parse(storedUser));
-      setToken(storedToken);
+      // If both exist and valid → restore session
+      if (storedUser && storedToken && storedToken !== "undefined") {
+        setUser(storedUser);
+        setToken(storedToken);
+        return;
+      }
+
+      // Otherwise → clear broken session
+      if (!storedUser || !storedToken) {
+        localStorage.removeItem("user");
+        localStorage.removeItem("token");
+        setUser(null);
+        setToken(null);
+      }
+
+    } catch (error) {
+      console.error("❌ AuthContext init error:", error);
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+      setUser(null);
+      setToken(null);
     }
   }, []);
 

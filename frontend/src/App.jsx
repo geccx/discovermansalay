@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -11,15 +11,18 @@ import Register from "./pages/Register";
 import VerifyOtp from "./pages/VerifyOtp";
 import AdminDashboard from "./pages/AdminDashboard";
 import CMSDashboard from "./pages/ContentManagement";
+
 import DestinationsPage from "./pages/destinations/DestinationsPage";
 import Beaches from "./pages/destinations/Beaches";
 import Restaurants from "./pages/destinations/Restaurants";
 import Adventures from "./pages/destinations/Adventures";
 import HotelsResort from "./pages/destinations/HotelsResort";
+
 import Accommodations from "./pages/navbar/Accommodations";
 import Activities from "./pages/navbar/Activities";
 import Events from "./pages/navbar/Events";
 import About from "./pages/navbar/About";
+
 import Wishlist from "./pages/Wishlist";
 import MapPage from "./pages/MapPage";
 import Search from "./pages/SearchPage";
@@ -27,6 +30,28 @@ import Terms from "./pages/Terms";
 
 import ProtectedRoute from "./routes/ProtectedRoute";
 import AdminRoute from "./routes/AdminRoute";
+import AdminInviteRegister from "./pages/AdminInviteRegister";
+import UserInviteRegister from "./pages/UserInviteRegister";
+
+// ------------------------------------------------------------
+// 🔒 USER-ONLY ROUTE (ADMIN CANNOT ACCESS USER PAGES)
+// ------------------------------------------------------------
+function UserOnlyRoute({ children }) {
+  const rawUser = localStorage.getItem("user");
+  let user = null;
+
+  try {
+    user = rawUser ? JSON.parse(rawUser) : null;
+  } catch {
+    user = null;
+  }
+
+  if (user?.role === "admin" || user?.role === "superadmin") {
+    return <Navigate to="/admin" replace />;
+  }
+
+  return children;
+}
 
 function App() {
   return (
@@ -35,20 +60,23 @@ function App() {
         <WishlistProvider>
 
           <Routes>
-            {/* Public */}
+
+            {/* Public Routes */}
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/verify-otp" element={<VerifyOtp />} />
             <Route path="/terms" element={<Terms />} />
 
-            {/* User Only */}
+            {/* User Only Routes */}
             <Route
               path="/wishlist"
               element={
-                <ProtectedRoute>
-                  <Wishlist />
-                </ProtectedRoute>
+                <UserOnlyRoute>
+                  <ProtectedRoute>
+                    <Wishlist />
+                  </ProtectedRoute>
+                </UserOnlyRoute>
               }
             />
 
@@ -62,19 +90,36 @@ function App() {
               }
             />
 
-            {/* Other pages */}
-            <Route path="/cms" element={<CMSDashboard />} />
+            {/* Admin Invite Registration */}
+            <Route path="/admin/register" element={<AdminInviteRegister />} />
+            <Route path="/invite/register" element={<UserInviteRegister />} />
+
+
+
+            {/* CMS (should not be user accessible) */}
+            <Route 
+              path="/cms" 
+              element={
+                <AdminRoute>
+                  <CMSDashboard />
+                </AdminRoute>
+              } 
+            />
+
+            {/* Public Pages */}
             <Route path="/destinations" element={<DestinationsPage />} />
             <Route path="/destinations/beaches" element={<Beaches />} />
             <Route path="/destinations/restaurants" element={<Restaurants />} />
             <Route path="/destinations/adventures" element={<Adventures />} />
             <Route path="/destinations/hotels-resort" element={<HotelsResort />} />
+
             <Route path="/accommodations" element={<Accommodations />} />
             <Route path="/activities" element={<Activities />} />
             <Route path="/events" element={<Events />} />
             <Route path="/about" element={<About />} />
             <Route path="/map" element={<MapPage />} />
             <Route path="/search" element={<Search />} />
+
           </Routes>
 
           <ToastContainer position="top-right" autoClose={3000} />

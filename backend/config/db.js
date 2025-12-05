@@ -1,8 +1,9 @@
 // backend/config/db.js
 const mysql = require("mysql2/promise");
+const bcrypt = require("bcrypt");
 
 // ---------------------------------------------
-// Load dotenv ONLY for local development
+// Load dotenv for LOCAL (Railway uses env vars)
 // ---------------------------------------------
 if (!process.env.RAILWAY_ENVIRONMENT) {
   try {
@@ -12,17 +13,16 @@ if (!process.env.RAILWAY_ENVIRONMENT) {
     console.warn("⚠️ dotenv not available, skipping");
   }
 } else {
-  console.log("ℹ️ DB: Running on RAILWAY environment");
+  console.log("ℹ️ DB: Running on RAILWAY");
 }
 
 let pool = null;
 
-// Defaults
 const DEFAULT_DB_NAME = "finaldiscovermansalay";
 const DEFAULT_CONN_LIMIT = 10;
 
 // ---------------------------------------------
-// Create a DB connection (root-level) for DB creation
+// Create root connection for DB creation (LOCAL ONLY)
 // ---------------------------------------------
 async function createRootConnection() {
   return mysql.createConnection({
@@ -38,11 +38,10 @@ async function createRootConnection() {
 }
 
 // ---------------------------------------------
-// Auto-create database on LOCAL ONLY
-// (Railway DB already exists)
+// Auto-create DB locally
 // ---------------------------------------------
 async function ensureDatabaseExists(dbName) {
-  if (process.env.RAILWAY_ENVIRONMENT) return; // Railway must NOT create DB
+  if (process.env.RAILWAY_ENVIRONMENT) return;
 
   try {
     const conn = await createRootConnection();
@@ -50,24 +49,23 @@ async function ensureDatabaseExists(dbName) {
     console.log(`📦 LOCAL DB ensured: ${dbName}`);
     await conn.end();
   } catch (err) {
-    console.error("❌ Failed to ensure local database:", err.message);
+    console.error("❌ Failed to ensure local DB:", err.message);
   }
 }
 
 // ---------------------------------------------
-// Create pool from DATABASE_URL (Railway)
+// Create pool from Railway DATABASE_URL
 // ---------------------------------------------
-async function createPoolFromDatabaseUrl(databaseUrl) {
+async function createPoolFromDatabaseUrl(url) {
   return mysql.createPool({
-    uri: databaseUrl,
+    uri: url,
     waitForConnections: true,
     connectionLimit: DEFAULT_CONN_LIMIT,
-    queueLimit: 0,
   });
 }
 
 // ---------------------------------------------
-// Create pool from local environment variables
+// Create pool from local configuration
 // ---------------------------------------------
 async function createPoolFromConfig() {
   const DB_NAME =
@@ -90,33 +88,68 @@ async function createPoolFromConfig() {
       3306,
     database: DB_NAME,
     waitForConnections: true,
-    connectionLimit:
-      Number(process.env.DB_CONN_LIMIT) || DEFAULT_CONN_LIMIT,
-    queueLimit: 0,
+    connectionLimit: DEFAULT_CONN_LIMIT,
   });
 }
 
 // ---------------------------------------------
-// Base tables (Users + Wishlist only)
+// SUPERADMIN CREATION
+// ---------------------------------------------
+async function ensureSuperAdmin(pool) {
+  const SUPERADMIN_EMAIL = "discoverxmansalay@gmail.com";
+  const DEFAULT_PASSWORD = "Admin123!";
+
+  const [rows] = await pool.query(
+    "SELECT id FROM users WHERE role = 'superadmin' LIMIT 1"
+  );
+
+  if (rows.length > 0) {
+    console.log("⚡ Superadmin already exists");
+    return;
+  }
+
+  console.log("🔐 Creating default Superadmin...");
+
+  const hashed = await bcrypt.hash(DEFAULT_PASSWORD, 10);
+
+  await pool.query(
+    `
+      INSERT INTO users 
+      (username, firstname, lastname, email, password, role, status, is_verified, is_approved)
+      VALUES (?, ?, ?, ?, ?, 'superadmin', 'active', 1, 1)
+    `,
+    ["superadmin", "Super", "Admin", SUPERADMIN_EMAIL, hashed]
+  );
+
+  console.log("✅ Superadmin created");
+}
+
+// ---------------------------------------------
+// USERS + WISHLIST TABLES (FULL MERGE VERSION)
 // ---------------------------------------------
 async function ensureUserAndWishlistTables(pool) {
-  // 1. Create base tables
-  const baseQueries = [
-    `CREATE TABLE IF NOT EXISTS users (
+  // Base USERS table (safest minimum schema)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
       id INT AUTO_INCREMENT PRIMARY KEY,
-      username VARCHAR(255) UNIQUE,
+      username VARCHAR(255),
       firstname VARCHAR(255),
       lastname VARCHAR(255),
       email VARCHAR(255) UNIQUE,
       password VARCHAR(255),
-      role ENUM('user','admin'),
+      role ENUM('user','admin','superadmin') DEFAULT 'user',
+      status ENUM('pending','active','disabled','invited') DEFAULT 'pending',
       contact_number VARCHAR(20),
       address TEXT,
       profile_image VARCHAR(255),
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )`,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `);
 
-    `CREATE TABLE IF NOT EXISTS wishlist (
+  // WISHLIST table
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS wishlist (
       id INT AUTO_INCREMENT PRIMARY KEY,
       username VARCHAR(255),
       item_id INT,
@@ -124,46 +157,63 @@ async function ensureUserAndWishlistTables(pool) {
       category VARCHAR(255),
       added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(username, item_id)
-    )`,
-  ];
+    )
+  `);
 
-  for (const sql of baseQueries) {
-    await pool.query(sql);
-  }
-
-  // 2. Get existing columns
-  const [columns] = await pool.query(`SHOW COLUMNS FROM users`);
+  // Fetch columns for dynamic upgrades
+  const [columns] = await pool.query("SHOW COLUMNS FROM users");
 
   const addColumn = async (name, type) => {
-    const exists = columns.some((col) => col.Field === name);
-    if (!exists) {
+    if (!columns.some((c) => c.Field === name)) {
       await pool.query(`ALTER TABLE users ADD COLUMN ${name} ${type}`);
-      console.log(`✅ Added missing column: ${name}`);
+      console.log(`🆕 Column added: ${name}`);
     }
   };
 
-  // 3. Add missing verification columns
-  await addColumn("is_verified", "TINYINT(1) NOT NULL DEFAULT 0");
+  // AUTH / VERIFICATION FIELDS
+  await addColumn("is_verified", "TINYINT(1) DEFAULT 0");
   await addColumn("otp_code", "VARCHAR(10)");
   await addColumn("otp_expires_at", "DATETIME");
-  await addColumn(
-    "verification_method",
-    "ENUM('email', 'phone') DEFAULT 'email'"
-  );
+  await addColumn("verification_method", "ENUM('email','phone') DEFAULT 'email'");
 
-   // 4. Add missing reset password OTP columns
   await addColumn("reset_otp_code", "VARCHAR(10)");
   await addColumn("reset_otp_expires_at", "DATETIME");
 
+  // INVITE FLOW FIELDS
+  await addColumn("invite_token", "VARCHAR(255)");
+  await addColumn("invite_expires_at", "DATETIME");
+  await addColumn("invited", "TINYINT(1) DEFAULT 0");
+
+  // EMAIL VERIFICATION TOKEN (used by /verify/:token)
+  await addColumn("verification_token", "VARCHAR(255)");
+  await addColumn("verification_expires", "DATETIME");
+
+  // USER APPROVAL
+  await addColumn("is_approved", "TINYINT(1) DEFAULT 0");
+
+  // ADMIN OTP FOR ADMIN LOGIN
+  await addColumn("admin_otp_code", "VARCHAR(10)");
+  await addColumn("admin_otp_expires_at", "DATETIME");
+
+  // ENUM FIXES ------------------------------------------------
+  await pool.query(`
+    ALTER TABLE users 
+    MODIFY role ENUM('user','admin','superadmin') DEFAULT 'user'
+  `);
+
+  await pool.query(`
+    ALTER TABLE users 
+    MODIFY status ENUM('pending','active','disabled','invited') DEFAULT 'pending'
+  `);
+
+  console.log("🔧 ENUM roles + status upgraded");
 }
 
-
-
 // ---------------------------------------------
-// Unified CMS content table
+// Unified content table
 // ---------------------------------------------
 async function ensureUnifiedContentTable(pool) {
-  const sql = `
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS content_items (
       id INT AUTO_INCREMENT PRIMARY KEY,
       source VARCHAR(50) NOT NULL,
@@ -185,42 +235,27 @@ async function ensureUnifiedContentTable(pool) {
       dedup_hash VARCHAR(64) NOT NULL,
       UNIQUE KEY uniq_dedup (dedup_hash)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-  `;
-  await pool.query(sql);
+  `);
 }
 
 // ---------------------------------------------
-// Initialize DB Pool
+// Initialize pool + migrate + ensure tables
 // ---------------------------------------------
 async function initialize() {
   if (pool) return pool;
 
-  // 1. Use Railway DATABASE_URL
   if (process.env.DATABASE_URL) {
-    try {
-      pool = await createPoolFromDatabaseUrl(process.env.DATABASE_URL);
-      await pool.query("SELECT 1");
-      console.log("🔗 Connected using DATABASE_URL (Railway)");
-    } catch (err) {
-      console.error("❌ DATABASE_URL connection failed:", err.message);
-      throw err;
-    }
+    pool = await createPoolFromDatabaseUrl(process.env.DATABASE_URL);
+    await pool.query("SELECT 1");
+    console.log("🔗 Connected via DATABASE_URL");
   } else {
-    // 2. Local environment
-    try {
-      pool = await createPoolFromConfig();
-      await pool.query("SELECT 1");
-      console.log("🔗 Connected to LOCAL MySQL");
-    } catch (err) {
-      console.error("❌ LOCAL DB connection failed:", err.message);
-      throw err;
-    }
+    pool = await createPoolFromConfig();
+    await pool.query("SELECT 1");
+    console.log("🔗 Connected to LOCAL MySQL");
   }
 
-  // Users + Wishlist tables only
   await ensureUserAndWishlistTables(pool);
-
-  // CMS unified content table
+  await ensureSuperAdmin(pool);
   await ensureUnifiedContentTable(pool);
 
   return pool;

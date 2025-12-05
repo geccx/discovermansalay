@@ -626,3 +626,133 @@
   display: none !important;
 }
 
+/* ================================
+   ADMIN OTP MODAL (CENTERED POPUP)
+   ================================ */
+
+.admin-otp-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 99999;
+}
+
+.admin-otp-modal {
+  background: #ffffff;
+  width: 90%;
+  max-width: 380px;
+  padding: 25px 28px;
+  border-radius: 14px;
+  box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.25);
+  animation: fadeInModal 0.25s ease-in-out;
+  position: relative;
+}
+
+@keyframes fadeInModal {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Title */
+.admin-otp-modal h2 {
+  margin: 0 0 10px 0;
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+  color: #033859;
+}
+
+.admin-otp-modal p {
+  text-align: center;
+  font-size: 14px;
+  margin-bottom: 18px;
+  color: #333;
+}
+
+/* OTP input */
+.admin-otp-input {
+  width: 95%;
+  padding: 12px 14px;
+  font-size: 16px;
+  border-radius: 10px;
+  border: 1.5px solid #c3c7cc;
+  outline: none;
+  margin-bottom: 16px;
+  transition: border-color 0.2s ease-in-out;
+}
+
+.admin-otp-input:focus {
+  border-color: #0066cc;
+}
+
+/* Verify Button */
+.admin-otp-button {
+  width: 100%;
+  background: #F25749;
+  color: white;
+  border: none;
+  padding: 12px 0;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease-in-out;
+}
+
+.admin-otp-button:hover {
+  background: #004f9e;
+}
+
+/* Close Button */
+.admin-otp-close {
+  width: 100%;
+  margin-top: 10px;
+  background: #ccc;
+  color: #333;
+  border: none;
+  padding: 11px 0;
+  border-radius: 10px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.admin-otp-close:hover {
+  background: #b5b5b5;
+}
+
+/* Responsive */
+@media (max-width: 450px) {
+  .admin-otp-modal {
+    padding: 20px 22px;
+  }
+
+  .admin-otp-button,
+  .admin-otp-close {
+    font-size: 15px;
+  }
+}
+
+
+/* Blur background when admin OTP modal appears */
+body.modal-open {
+  overflow: hidden;
+}
+
+.login-form-container-unique.modal-blur {
+  filter: blur(3px);
+  pointer-events: none;
+  user-select: none;
+}
