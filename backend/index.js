@@ -45,9 +45,6 @@ app.use(
   })
 );
 
-/* ---------------------------------------------
-   REQUEST LOGGER
---------------------------------------------- */
 app.use((req, res, next) => {
   console.log(`[${req.method}] ${req.originalUrl}`);
   next();
@@ -95,7 +92,7 @@ app.use(
 );
 
 /* ---------------------------------------------
-   SERVICE LOADER FUNCTION
+   SERVICE LOADER
 --------------------------------------------- */
 function loadService(name, mountPath, loaderFn) {
   try {
@@ -148,6 +145,16 @@ loadService("CMS Navbar", "/api/cms/navbar", () =>
   require("./cms-service/routes/navbar")
 );
 
+loadService("CMS Accommodations", "/api/cms/accommodation", () =>
+  require("./cms-service/routes/accommodationcms")
+);
+
+loadService("Booking Service", "/api/booking", () =>
+  require("./booking-service/routes/booking")
+);
+
+
+
 /* ---------------------------------------------
    DESTINATIONS + MAP
 --------------------------------------------- */
@@ -155,6 +162,7 @@ loadService("Destinations Service", "/api/destinations", () =>
   require("./destination-service/routes/destinations")
 );
 
+// Map service for tourist spots (Leaflet admin + frontend)
 loadService("Map Service", "/map/touristspots", () =>
   require("./map-service/routes/touristSpots")
 );
@@ -178,12 +186,10 @@ loadService("Wishlist Service", "/api/user/wishlist", () =>
 );
 
 /* ---------------------------------------------
-   VISITOR TRACKING + ADMIN LOG ROUTES (NEW)
+   VISITOR & ADMIN LOGS
 --------------------------------------------- */
 app.use("/api/visitors", require("./routes/visitors"));
 app.use("/api/adminlogs", require("./routes/adminLogs"));
-
-
 console.log("🆕 Visitors + AdminLogs routes registered");
 
 /* ---------------------------------------------
@@ -200,7 +206,7 @@ app.get("/api/health", async (req, res) => {
 });
 
 /* ---------------------------------------------
-   ROOT API
+   ROOT
 --------------------------------------------- */
 app.get("/", (req, res) => {
   res.json({

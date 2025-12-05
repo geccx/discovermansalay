@@ -1,3 +1,4 @@
+// src/pages/Adventures.jsx
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Navbar from '../../components/Navbar';
@@ -6,10 +7,10 @@ import './styles/Adventures.css';
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 const ENDPOINT = API_BASE ? `${API_BASE}/api/destinations` : '/api/destinations';
 
-const buildImageSrc = (imagePath) => {
-  if (!imagePath) return '/images/fallback.jpg';
-  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) return imagePath;
-  return API_BASE ? `${API_BASE}${imagePath}` : imagePath;
+const buildImageSrc = (mediaPath) => {
+  if (!mediaPath) return '/images/fallback.jpg';
+  if (mediaPath.startsWith('http')) return mediaPath;
+  return API_BASE ? `${API_BASE}${mediaPath}` : mediaPath;
 };
 
 const Adventures = () => {
@@ -22,7 +23,7 @@ const Adventures = () => {
       try {
         const res = await axios.get(ENDPOINT);
         const all = Array.isArray(res.data) ? res.data : [];
-        const filtered = all.filter((dest) => dest?.category === 'Adventures');
+        const filtered = all.filter((item) => item?.category === 'Adventures');
         setAdventures(filtered);
       } catch (err) {
         console.error('Error fetching adventures:', err);
@@ -54,17 +55,17 @@ const Adventures = () => {
           {loading ? (
             <p>Loading adventures...</p>
           ) : adventures.length > 0 ? (
-            adventures.map((adventure) => (
-              <div key={adventure.id} className="adventures-card">
+            adventures.map((item) => (
+              <div key={item.id} className="adventures-card">
                 <img
-                  src={buildImageSrc(adventure.image)}
-                  alt={adventure.name || 'Adventure'}
+                  src={buildImageSrc(item.media_path)}
+                  alt={item.title}
                   className="adventures-img"
                   loading="lazy"
-                  onError={(e) => { e.currentTarget.src = '/images/fallback.jpg'; }}
+                  onError={(e) => (e.currentTarget.src = '/images/fallback.jpg')}
                 />
                 <div className="adventures-content">
-                  <h3 className="adventures-name">{adventure.name}</h3>
+                  <h3 className="adventures-name">{item.title}</h3>
                 </div>
               </div>
             ))

@@ -1,6 +1,6 @@
-// frontend component: UsersPage.jsx
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { toast } from "react-toastify";
 import { logAdminAction } from "../../utils/adminLogger";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
@@ -41,7 +41,9 @@ const UsersPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  // Get admin token
+  // Delete Confirmation Modal
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   const getAdminToken = () =>
     localStorage.getItem("adminToken") ||
     localStorage.getItem("admin_token") ||
@@ -64,12 +66,7 @@ const UsersPage = () => {
 
     try {
       const res = await axios.get(`${API_BASE}/api/admin/users/list`, {
-        params: {
-          page,
-          limit: 10,
-          search: searchTerm,
-          status: statusFilter,
-        },
+        params: { page, limit: 10, search: searchTerm, status: statusFilter },
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -169,16 +166,13 @@ const UsersPage = () => {
   };
 
   /* ======================================================
-     UPDATE USER (NO CREATE)
+     UPDATE USER
   ====================================================== */
   const handleSaveUser = async () => {
     if (!validateDetails()) return;
 
     const token = getAdminToken();
-    if (!token) {
-      setFormError("Admin session expired. Please log in again.");
-      return;
-    }
+    if (!token) return setFormError(" Admin session expired. Please log in again.");
 
     try {
       const formData = new FormData();
@@ -197,59 +191,64 @@ const UsersPage = () => {
         `${API_BASE}/api/admin/users/user/${userDetails.id}`,
         formData,
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" },
         }
       );
 
-      // UPDATED LOGGING ✔
       await logAdminAction("Update User", {
         userId: userDetails.id,
         email: userDetails.email,
       });
+
+      toast.success("User updated successfully!");
 
       setShowUpdateForm(false);
       setSelectedUser(null);
       fetchUsers(currentPage);
     } catch (err) {
       console.error("SAVE USER ERROR:", err);
-      setFormError("Failed to save user.");
+      toast.error("Failed to update user.");
     }
   };
 
   /* ======================================================
-     DELETE USER
+     DELETE USER (with confirmation)
   ====================================================== */
-  const handleDeleteUser = async () => {
-    if (!selectedUser) return;
+  const confirmDelete = () => {
+    setShowDeleteConfirm(true);
+  };
 
-    if (!window.confirm("Are you sure you want to delete this user?")) return;
+const handleDeleteUser = async () => {
+  const token = getAdminToken();
+  if (!token) return toast.error("Session expired. Log in again.");
 
-    const token = getAdminToken();
-    if (!token) return alert("Session expired. Log in again.");
+  try {
+    await axios.delete(`${API_BASE}/api/admin/users/user/${selectedUser.id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
-    try {
-      await axios.delete(
-        `${API_BASE}/api/admin/users/user/${selectedUser.id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+    await logAdminAction("Delete User", {
+      userId: selectedUser.id,
+      email: selectedUser.email,
+    });
 
-      // UPDATED LOGGING ✔
-      await logAdminAction("Delete User", {
-        userId: selectedUser.id,
-        email: selectedUser.email,
-      });
+    toast.success("User deleted successfully!");
 
+    // Delay UI closing so toast can appear
+    setTimeout(() => {
+      setShowDeleteConfirm(false);
       setShowUserDetailsView(false);
       setSelectedUser(null);
       fetchUsers(currentPage);
-    } catch (err) {
-      console.error("DELETE USER ERROR:", err);
-      alert("Failed to delete user.");
-    }
-  };
+    }, 700);
+
+  } catch (err) {
+    console.error("DELETE USER ERROR:", err);
+
+    toast.error("Failed to delete user.");
+  }
+};
+
 
   /* ======================================================
      CLOSE MODALS
@@ -284,17 +283,16 @@ const UsersPage = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // UPDATED LOGGING ✔
       await logAdminAction("Invite User", { email: inviteForm.email });
 
-      alert("Invitation sent!");
+      toast.success("Invitation sent!");
+
       setShowInviteModal(false);
       setInviteForm({ email: "" });
-
       fetchUsers(currentPage);
     } catch (err) {
       console.error("INVITE USER ERROR:", err);
-      setInviteError("Failed to send invitation.");
+      toast.error("Failed to send invitation.");
     } finally {
       setInviteLoading(false);
     }
@@ -401,9 +399,7 @@ const UsersPage = () => {
                     <td>{u.contact_number || "N/A"}</td>
                     <td>{u.address || "N/A"}</td>
                     <td>
-                      <span
-                        className={`users-page-status-badge ${u.status?.toLowerCase()}`}
-                      >
+                      <span className={`users-page-status-badge ${u.status?.toLowerCase()}`}>
                         {u.status || "N/A"}
                       </span>
                     </td>
@@ -416,11 +412,7 @@ const UsersPage = () => {
           {/* PAGINATION */}
           <div className="users-page-pagination">
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
-              <button
-                key={num}
-                onClick={() => fetchUsers(num)}
-                disabled={num === currentPage}
-              >
+              <button key={num} onClick={() => fetchUsers(num)} disabled={num === currentPage}>
                 {num}
               </button>
             ))}
@@ -446,8 +438,12 @@ const UsersPage = () => {
 
                 <div className="users-page-btn-group">
                   <button onClick={openUpdateForm}>Edit</button>
-                  <button className="delete" onClick={handleDeleteUser}>Delete</button>
-                  <button className="cancel" onClick={closeForms}>Close</button>
+                  <button className="delete" onClick={confirmDelete}>
+                    Delete
+                  </button>
+                  <button className="cancel" onClick={closeForms}>
+                    Close
+                  </button>
                 </div>
               </div>
 
@@ -605,6 +601,32 @@ const UsersPage = () => {
             <p style={{ fontSize: 12, color: "#6b7280", marginTop: 12 }}>
               The invited user will receive an email with a verification link.
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE CONFIRMATION MODAL */}
+      {showDeleteConfirm && (
+        <div className="users-page-modal-overlay">
+          <div className="users-page-modal" style={{ maxWidth: 400 }}>
+            <h3>Confirm Delete</h3>
+
+            <p style={{ marginTop: 10 }}>
+              Are you sure you want to permanently delete this user?
+            </p>
+
+            <div className="users-page-btn-group" style={{ marginTop: 20 }}>
+              <button className="delete" onClick={handleDeleteUser}>
+                Yes, Delete
+              </button>
+
+              <button
+                className="cancel"
+                onClick={() => setShowDeleteConfirm(false)}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}

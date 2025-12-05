@@ -16,21 +16,19 @@ const CATEGORY_LABELS = {
   Restaurants: 'Restaurants',
   Adventures: 'Adventures',
   'Hotels & Resort': 'Hotels & Resort',
+  Accommodations: 'Accommodations'
 };
 
-// Utility to sanitize class names for Swiper buttons
 const toSafeClassName = (str) =>
   String(str || '').replace(/ & /g, '-and-').replace(/\s+/g, '-').toLowerCase();
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 const ENDPOINT = API_BASE ? `${API_BASE}/api/destinations` : '/api/destinations';
 
-// Builds an image src from a backend-provided path or absolute URL
-const buildImageSrc = (imagePath) => {
-  if (!imagePath) return '/images/fallback.jpg';
-  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) return imagePath;
-  // imagePath may already include a leading slash like '/uploads/...'
-  return API_BASE ? `${API_BASE}${imagePath}` : imagePath;
+const buildImageSrc = (mediaPath) => {
+  if (!mediaPath) return '/images/fallback.jpg';
+  if (mediaPath.startsWith('http://') || mediaPath.startsWith('https://')) return mediaPath;
+  return API_BASE ? `${API_BASE}${mediaPath}` : mediaPath;
 };
 
 const DestinationsPage = () => {
@@ -45,14 +43,14 @@ const DestinationsPage = () => {
         console.error('Failed to load destinations:', err);
       }
     };
-
     fetchDestinations();
   }, []);
 
-  const groupedByCategory = destinations.reduce((groups, dest) => {
-    const category = dest?.category || 'Uncategorized';
+  // Group by category
+  const groupedByCategory = destinations.reduce((groups, item) => {
+    const category = item?.category || 'Uncategorized';
     if (!groups[category]) groups[category] = [];
-    groups[category].push(dest);
+    groups[category].push(item);
     return groups;
   }, {});
 
@@ -102,32 +100,26 @@ const DestinationsPage = () => {
                 }}
                 modules={[Navigation]}
                 className="destinations-swiper"
-                // prevent swiper from crashing if nav elements are not immediately available:
                 onSwiper={(swiper) => {
-                  // try to update navigation if available
                   try {
                     swiper.params.navigation.nextEl = `.custom-swiper-button-next-${safeClass}`;
                     swiper.params.navigation.prevEl = `.custom-swiper-button-prev-${safeClass}`;
-                    if (swiper.navigation && typeof swiper.navigation.update === 'function') {
-                      swiper.navigation.update();
-                    }
+                    swiper.navigation.update();
                   } catch (err) {
-                    // log but don't throw
-                    /// eslint-disable-next-line no-console
                     console.warn('Swiper navigation init warning:', err);
                   }
                 }}
               >
                 {items.map((dest) => (
-                  <SwiperSlide key={dest.id ?? `${key}-${Math.random()}`}>
+                  <SwiperSlide key={dest.id}>
                     <div className="destination-card">
                       <img
-                        src={buildImageSrc(dest.image)}
-                        alt={dest.name || 'Destination'}
+                        src={buildImageSrc(dest.media_path)}
+                        alt={dest.title}
                         className="destination-img"
                         onError={(e) => { e.currentTarget.src = '/images/fallback.jpg'; }}
                       />
-                      <div className="destination-name">{dest.name}</div>
+                      <div className="destination-name">{dest.title}</div>
                     </div>
                   </SwiperSlide>
                 ))}
@@ -143,10 +135,7 @@ const DestinationsPage = () => {
             </div>
 
             <div className="view-all-wrapper">
-              <Link
-                to={`/destinations/${safeClass}`}
-                className="view-all-button"
-              >
+              <Link to={`/destinations/${safeClass}`} className="view-all-button">
                 View all {label}
               </Link>
             </div>

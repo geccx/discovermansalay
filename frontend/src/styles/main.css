@@ -2,6 +2,16 @@
   --text-color: #033859;
   --highlight-color: #F25749;
   --background-color: #F2F2F2;
+
+  /* New additions */
+  --card-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  --border-radius: 14px;
+  --soft-bg: #ffffffd8;
+  --soft-border: rgba(0, 0, 0, 0.08);
+  --success: #28a745;
+  --warning: #ffc107;
+  --danger: #d9534f;
+  --pending: #ff8c00;
 }
 
 /* ===== BASE STYLES ===== */

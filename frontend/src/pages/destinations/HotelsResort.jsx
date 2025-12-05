@@ -1,3 +1,4 @@
+// src/pages/HotelsResort.jsx
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Navbar from '../../components/Navbar';
@@ -6,10 +7,10 @@ import './styles/HotelsResort.css';
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 const ENDPOINT = API_BASE ? `${API_BASE}/api/destinations` : '/api/destinations';
 
-const buildImageSrc = (imagePath) => {
-  if (!imagePath) return '/images/fallback.jpg';
-  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) return imagePath;
-  return API_BASE ? `${API_BASE}${imagePath}` : imagePath;
+const buildImageSrc = (mediaPath) => {
+  if (!mediaPath) return '/images/fallback.jpg';
+  if (mediaPath.startsWith('http')) return mediaPath;
+  return API_BASE ? `${API_BASE}${mediaPath}` : mediaPath;
 };
 
 const HotelsResort = () => {
@@ -22,15 +23,15 @@ const HotelsResort = () => {
       try {
         const res = await axios.get(ENDPOINT);
         const all = Array.isArray(res.data) ? res.data : [];
-        // match exact category string 'Hotels & Resort'
-        const filtered = all.filter((dest) => dest?.category === 'Hotels & Resort');
+        const filtered = all.filter((item) => item?.category === 'Hotels & Resort');
         setHotels(filtered);
       } catch (err) {
-        console.error('Error fetching hotels & resorts:', err);
+        console.error('Error loading hotels:', err);
       } finally {
         setLoading(false);
       }
     };
+
     fetchHotels();
   }, []);
 
@@ -41,7 +42,7 @@ const HotelsResort = () => {
       <div className="hotels-hero">
         <div className="hotels-hero-overlay" />
         <div className="hotels-hero-content">
-          <h1 className="hotels-title">HOTELS & RESORTS</h1>
+          <h1 className="hotels-title">HOTELS & RESORT</h1>
           <div className="hotels-underline" />
           <p className="hotels-subtitle">Comfort and luxury await at our top-rated stays.</p>
         </div>
@@ -52,17 +53,17 @@ const HotelsResort = () => {
           {loading ? (
             <p>Loading hotels & resorts...</p>
           ) : hotels.length > 0 ? (
-            hotels.map((hotel) => (
-              <div key={hotel.id} className="hotels-card">
+            hotels.map((item) => (
+              <div key={item.id} className="hotels-card">
                 <img
-                  src={buildImageSrc(hotel.image)}
-                  alt={hotel.name || 'Hotel/Resort'}
+                  src={buildImageSrc(item.media_path)}
+                  alt={item.title}
                   className="hotels-img"
                   loading="lazy"
-                  onError={(e) => { e.currentTarget.src = '/images/fallback.jpg'; }}
+                  onError={(e) => (e.currentTarget.src = '/images/fallback.jpg')}
                 />
                 <div className="hotels-content">
-                  <h3 className="hotels-name">{hotel.name}</h3>
+                  <h3 className="hotels-name">{item.title}</h3>
                 </div>
               </div>
             ))

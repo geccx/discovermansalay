@@ -162,17 +162,29 @@ const handleLogout = () => {
         }}
       >
         {/* Wishlist */}
-        <Link
-          to="/wishlist"
-          className="wishlist-icon"
-          style={{ position: "relative" }}
-          onClick={handleWishlistClick}
-        >
-          <FaHeart size={25} title="Wishlist" />
-          {wishlistCount > 0 && (
-            <span className="wishlist-count">{wishlistCount}</span>
-          )}
-        </Link>
+       <Link
+  to={user ? "/wishlist" : "/login"}
+  className="wishlist-icon"
+  style={{ position: "relative" }}
+  onClick={(e) => {
+    if (!user) {
+      e.preventDefault();
+      return navigate("/login");
+    }
+
+    // prevent redirecting to admin route
+    if (user.role === "admin") {
+      e.preventDefault();
+      return navigate("/wishlist");
+    }
+  }}
+>
+  <FaHeart size={25} title="Wishlist" />
+  {wishlistCount > 0 && (
+    <span className="wishlist-count">{wishlistCount}</span>
+  )}
+</Link>
+
 
         {/* Greeting */}
         {user && (

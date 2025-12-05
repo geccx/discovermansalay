@@ -1,133 +1,158 @@
+// backend/destination-service/routes/destinations.js
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const { getPool } = require('../../config/db');
 
-// VALID CATEGORIES
-const ALLOWED_CATEGORIES = ['Beaches', 'Restaurants', 'Adventures', 'Hotels & Resort', 'Featured Destinations', 'Accommodations'];
+const ALLOWED_CATEGORIES = [
+  'Featured Destinations',
+  'Beaches',
+  'Restaurants',
+  'Adventures',
+  'Hotels & Resort',
+  'Accommodations'
+];
 
-// Helper: Validate category
-const isValidCategory = (category) => ALLOWED_CATEGORIES.includes(category);
+const isValidCategory = (c) => ALLOWED_CATEGORIES.includes(c);
+const slugify = (t) => t.toLowerCase().replace(/\s+/g, '-').replace(/[^\w\-]+/g, '');
 
-// Helper: Slugify
-const slugify = (text) =>
-  text.toString().toLowerCase().replace(/\s+/g, '-').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '-');
-
-// Multer storage setup
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const category = req.body.category;
-    if (!isValidCategory(category)) {
-      return cb(new Error('Invalid category'), null);
-    }
+    if (!isValidCategory(category)) return cb(new Error("Invalid category"));
 
-    const uploadPath = path.join(__dirname, '../../uploads/destination', category);
-    fs.mkdirSync(uploadPath, { recursive: true });
-    cb(null, uploadPath);
+    const uploadDir = path.join(__dirname, "../../uploads/destination", category);
+    fs.mkdirSync(uploadDir, { recursive: true });
+
+    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    const name = slugify(req.body.name || 'destination');
+    const name = slugify(req.body.title || 'destination');
     const ext = path.extname(file.originalname);
-    const uniqueSuffix = Date.now();
-    cb(null, `${name}-${uniqueSuffix}${ext}`);
-  },
+    cb(null, `${name}-${Date.now()}${ext}`);
+  }
 });
+
 const upload = multer({ storage });
 
-// GET all destinations
-router.get('/', async (req, res) => {
+/* ---------------------------------------
+   GET all destinations (source = "destination")
+--------------------------------------- */
+router.get("/", async (req, res) => {
   try {
     const pool = await getPool();
-    const [rows] = await pool.execute('SELECT * FROM destinations ORDER BY id DESC');
+    const [rows] = await pool.execute(
+      `SELECT id, title, description, category, media_path 
+       FROM content_items 
+       WHERE source = 'destination'
+       ORDER BY id DESC`
+    );
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch destinations', details: err.message });
+    res.status(500).json({ error: err.message });
   }
 });
 
-// CREATE destination
-router.post('/', upload.single('image'), async (req, res) => {
-  const { name, category, description } = req.body;
-
+/* ---------------------------------------
+   CREATE destination
+--------------------------------------- */
+router.post("/", upload.single("image"), async (req, res) => {
+  const { title, name, category, description } = req.body;
   if (!isValidCategory(category)) {
-    return res.status(400).json({ error: 'Invalid category' });
+    return res.status(400).json({ error: "Invalid category" });
   }
-
   if (!req.file) {
-    return res.status(400).json({ error: 'Image is required' });
+    return res.status(400).json({ error: "Image required" });
   }
 
-  const image = `/uploads/destination/${category}/${req.file.filename}`;
+  const mediaPath = `/uploads/destination/${category}/${req.file.filename}`;
+  const hash = crypto.createHash("sha256").update(req.file.filename).digest("hex");
 
   try {
     const pool = await getPool();
     await pool.execute(
-      'INSERT INTO destinations (name, category, description, image) VALUES (?, ?, ?, ?)',
-      [name, category, description, image]
+      `INSERT INTO content_items (source, title, name, description, category, media_type, media_path, dedup_hash)
+       VALUES ('destination', ?, ?, ?, ?, 'image', ?, ?)`,
+      [title, name, description, category, mediaPath, hash]
     );
-    res.status(201).json({ message: 'Destination created successfully', image });
+
+    res.status(201).json({ message: "Destination created", media_path: mediaPath });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to create destination', details: err.message });
+    res.status(500).json({ error: "DB Insert failed", details: err.message });
   }
 });
 
-// UPDATE destination
-router.put('/:id', upload.single('image'), async (req, res) => {
-  const { name, category, description } = req.body;
+/* ---------------------------------------
+   UPDATE destination
+--------------------------------------- */
+router.put("/:id", upload.single("image"), async (req, res) => {
   const id = req.params.id;
-
-  if (category && !isValidCategory(category)) {
-    return res.status(400).json({ error: 'Invalid category' });
-  }
 
   try {
     const pool = await getPool();
-    const [rows] = await pool.execute('SELECT * FROM destinations WHERE id = ?', [id]);
-    const old = rows[0];
-    if (!old) return res.status(404).json({ error: 'Destination not found' });
+    const [rows] = await pool.execute(
+      "SELECT * FROM content_items WHERE id = ? AND source = 'destination'",
+      [id]
+    );
 
-    let query = 'UPDATE destinations SET name = ?, category = ?, description = ?';
-    const values = [name, category || old.category, description];
+    if (rows.length === 0) return res.status(404).json({ error: "Not found" });
+
+    const old = rows[0];
+    const { title, name, category, description } = req.body;
+
+    let mediaPath = old.media_path;
 
     if (req.file) {
-      const newImagePath = `/uploads/destination/${category}/${req.file.filename}`;
-      query += ', image = ?';
-      values.push(newImagePath);
+      const newPath = `/uploads/destination/${category}/${req.file.filename}`;
+      mediaPath = newPath;
 
-      // Delete old image
-      const oldPath = path.join(__dirname, '../../', old.image);
-      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      // delete old file
+      const oldFilePath = path.join(__dirname, "../../", old.media_path);
+      if (fs.existsSync(oldFilePath)) fs.unlinkSync(oldFilePath);
     }
 
-    query += ' WHERE id = ?';
-    values.push(id);
+    await pool.execute(
+      `UPDATE content_items 
+       SET title=?, name=?, description=?, category=?, media_path=? 
+       WHERE id=? AND source='destination'`,
+      [title, name, description, category, mediaPath, id]
+    );
 
-    await pool.execute(query, values);
-    res.json({ message: 'Destination updated successfully' });
+    res.json({ message: "Updated successfully" });
   } catch (err) {
-    res.status(500).json({ error: 'Update failed', details: err.message });
+    res.status(500).json({ error: "Update failed", details: err.message });
   }
 });
 
-// DELETE destination
-router.delete('/:id', async (req, res) => {
+/* ---------------------------------------
+   DELETE destination
+--------------------------------------- */
+router.delete("/:id", async (req, res) => {
   const id = req.params.id;
 
   try {
     const pool = await getPool();
-    const [rows] = await pool.execute('SELECT * FROM destinations WHERE id = ?', [id]);
-    const dest = rows[0];
-    if (!dest) return res.status(404).json({ error: 'Destination not found' });
+    const [rows] = await pool.execute(
+      "SELECT * FROM content_items WHERE id = ? AND source='destination'",
+      [id]
+    );
 
-    const imagePath = path.join(__dirname, '../../', dest.image);
-    if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
+    if (rows.length === 0) return res.status(404).json({ error: "Not found" });
 
-    await pool.execute('DELETE FROM destinations WHERE id = ?', [id]);
-    res.json({ message: 'Destination deleted successfully' });
+    const item = rows[0];
+
+    // delete file
+    const filePath = path.join(__dirname, "../../", item.media_path);
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+
+    await pool.execute("DELETE FROM content_items WHERE id = ?", [id]);
+
+    res.json({ message: "Deleted successfully" });
   } catch (err) {
-    res.status(500).json({ error: 'Deletion failed', details: err.message });
+    res.status(500).json({ error: "Delete failed", details: err.message });
   }
 });
 

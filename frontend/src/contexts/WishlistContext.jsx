@@ -1,122 +1,88 @@
-import React, { createContext, useReducer, useEffect, useMemo } from "react";
+import React, { createContext, useReducer, useEffect } from "react";
+import { toast } from "react-toastify";
 
 const WishlistContext = createContext();
 
-// ------------------------------
-// SAFE PARSE FUNCTION
-// ------------------------------
-const safeParse = (value) => {
-  try {
-    if (!value || value === "undefined" || value === "null") return null;
-    return JSON.parse(value);
-  } catch (err) {
-    console.error("Invalid JSON in localStorage:", value);
-    return null;
-  }
-};
-
-// ------------------------------
-// REDUCER
-// ------------------------------
 const wishlistReducer = (state, action) => {
   switch (action.type) {
     case "SET_ITEMS":
-      return Array.isArray(action.payload) ? action.payload : [];
+      return action.payload;
 
     case "ADD_ITEM":
-      if (state.find((item) => item.item_id === action.payload.item_id))
-        return state;
+      if (state.some((i) => i.item_id === action.payload.item_id)) return state;
       return [...state, action.payload];
 
     case "REMOVE_ITEM":
-      return state.filter((item) => item.item_id !== action.payload);
+      return state.filter((i) => i.item_id !== action.payload);
 
     default:
       return state;
   }
 };
 
-// ------------------------------
-// PROVIDER
-// ------------------------------
 export function WishlistProvider({ children }) {
   const [wishlist, dispatch] = useReducer(wishlistReducer, []);
-
   const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
-  // Safe load user
-  const user = useMemo(() => safeParse(localStorage.getItem("user")), []);
-  const username = user?.username || null;
+  const user = JSON.parse(localStorage.getItem("user"));
+  const username = user?.username;
 
-  // ------------------------------
-  // LOAD WISHLIST FROM BACKEND
-  // ------------------------------
+  /* --------------------------------------------------
+     LOAD WISHLIST
+  -------------------------------------------------- */
   useEffect(() => {
     if (!username) return;
-
-    const loadWishlist = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/api/wishlist/${username}`);
-        const data = await res.json();
-
-        dispatch({ type: "SET_ITEMS", payload: data || [] });
-      } catch (err) {
-        console.error("Failed to load wishlist from DB:", err);
-      }
-    };
-
-    loadWishlist();
+    fetch(`${API_BASE}/api/user/wishlist/${username}`)
+      .then((res) => res.json())
+      .then((data) => dispatch({ type: "SET_ITEMS", payload: data }))
+      .catch(() => toast.error("Failed to load wishlist"));
   }, [username, API_BASE]);
 
-  // ------------------------------
-  // SAVE TO LOCAL STORAGE
-  // ------------------------------
-  useEffect(() => {
-    try {
-      localStorage.setItem("wishlist", JSON.stringify(wishlist));
-    } catch (err) {
-      console.error("Error saving wishlist to localStorage", err);
-    }
-  }, [wishlist]);
-
-  // ------------------------------
-  // ADD ITEM
-  // ------------------------------
+  /* --------------------------------------------------
+     ADD ITEM
+  -------------------------------------------------- */
   const addItem = async (item) => {
-    if (!username) return;
+    if (!username) return toast.info("Please sign in to use wishlist.");
 
     try {
-      await fetch(`${API_BASE}/api/wishlist`, {
+      const res = await fetch(`${API_BASE}/api/user/wishlist`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...item, username }),
+        body: JSON.stringify(item),
       });
 
-      dispatch({ type: "ADD_ITEM", payload: item });
-    } catch (err) {
-      console.error("Failed to add item to DB:", err);
+      if (res.ok) {
+        dispatch({ type: "ADD_ITEM", payload: item });
+        toast.success("Added to wishlist!");
+      } else {
+        const data = await res.json();
+        toast.error(data.message);
+      }
+    } catch {
+      toast.error("Failed to add to wishlist");
     }
   };
 
-  // ------------------------------
-  // REMOVE ITEM
-  // ------------------------------
-  const removeItem = async (item_id) => {
-    if (!username) return;
-
+  /* --------------------------------------------------
+     REMOVE ITEM
+  -------------------------------------------------- */
+  const removeItem = async (itemId) => {
     try {
-      await fetch(`${API_BASE}/api/wishlist/${username}/${item_id}`, {
+      await fetch(`${API_BASE}/api/user/wishlist/${username}/${itemId}`, {
         method: "DELETE",
       });
 
-      dispatch({ type: "REMOVE_ITEM", payload: item_id });
-    } catch (err) {
-      console.error("Failed to remove item from DB:", err);
+      dispatch({ type: "REMOVE_ITEM", payload: itemId });
+      toast.success("Removed from wishlist");
+    } catch {
+      toast.error("Failed to remove wishlist item");
     }
   };
 
   return (
-    <WishlistContext.Provider value={{ wishlist, addItem, removeItem }}>
+    <WishlistContext.Provider
+      value={{ wishlist, addItem, removeItem, dispatch }}
+    >
       {children}
     </WishlistContext.Provider>
   );

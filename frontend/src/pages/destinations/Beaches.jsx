@@ -7,10 +7,10 @@ import './styles/Beaches.css';
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 const ENDPOINT = API_BASE ? `${API_BASE}/api/destinations` : '/api/destinations';
 
-const buildImageSrc = (imagePath) => {
-  if (!imagePath) return '/images/fallback.jpg';
-  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) return imagePath;
-  return API_BASE ? `${API_BASE}${imagePath}` : imagePath;
+const buildImageSrc = (mediaPath) => {
+  if (!mediaPath) return '/images/fallback.jpg';
+  if (mediaPath.startsWith('http')) return mediaPath;
+  return API_BASE ? `${API_BASE}${mediaPath}` : mediaPath;
 };
 
 const Beaches = () => {
@@ -23,7 +23,7 @@ const Beaches = () => {
       try {
         const res = await axios.get(ENDPOINT);
         const all = Array.isArray(res.data) ? res.data : [];
-        const filtered = all.filter((dest) => dest?.category === 'Beaches');
+        const filtered = all.filter((item) => item?.category === 'Beaches');
         setBeaches(filtered);
       } catch (err) {
         console.error('Error fetching beaches:', err);
@@ -53,17 +53,17 @@ const Beaches = () => {
           {loading ? (
             <p>Loading beaches...</p>
           ) : beaches.length > 0 ? (
-            beaches.map((beach) => (
-              <div key={beach.id} className="beaches-card">
+            beaches.map((item) => (
+              <div key={item.id} className="beaches-card">
                 <img
-                  src={buildImageSrc(beach.image)}
-                  alt={beach.name || 'Beach'}
+                  src={buildImageSrc(item.media_path)}
+                  alt={item.title}
                   className="beaches-img"
                   loading="lazy"
-                  onError={(e) => { e.currentTarget.src = '/images/fallback.jpg'; }}
+                  onError={(e) => (e.currentTarget.src = '/images/fallback.jpg')}
                 />
                 <div className="beaches-content">
-                  <h3 className="beaches-name">{beach.name}</h3>
+                  <h3 className="beaches-name">{item.title}</h3>
                 </div>
               </div>
             ))

@@ -12,16 +12,22 @@ const MapCMS = lazy(() => import("./MapManagement"));
 const DestinationManager = lazy(() => import("./DestinationManager"));
 const VisitorLogs = lazy(() => import("./VisitorLogs"));
 const AdminLogs = lazy(() => import("./AdminLogs"));
+const BookingCMS = lazy(() => import("./ContentManagement/BookingCMS"));
+const AccommodationsCMS = lazy(() => import("./ContentManagement/AccommodationsCMS"));
+
 
 const MENU_ITEMS = [
   "Admin Dashboard",
   "User Management",
   "Content Management",
+  "Accommodation Management",
+  "Booking Management",
   "Map Management",
   "Destination Management",
   "Visitor Logs",
   "Admin Logs",
 ];
+
 
 const AdminDashboard = () => {
   const [activeMenu, setActiveMenu] = useState("Admin Dashboard");
@@ -55,7 +61,8 @@ const AdminDashboard = () => {
                 className={`menu-item ${activeMenu === item ? "active" : ""}`}
                 onClick={() => {
                   setActiveMenu(item);
-                  if (item === "User Management") setActiveUserSubMenu("Admins");
+                  if (item === "User Management")
+                    setActiveUserSubMenu("Admins");
                   if (item === "Content Management")
                     setActiveContentSubMenu("Logo");
                   if (item === "Map Management")
@@ -73,7 +80,7 @@ const AdminDashboard = () => {
                       "Background",
                       "Top Destinations",
                       "Highlight Events",
-                      "Experience Mansalay",
+                      "Experience Mansalay"
                     ].map((subItem) => (
                       <div
                         key={subItem}
@@ -164,11 +171,35 @@ const AdminDashboard = () => {
           </Suspense>
         )}
 
-        {activeMenu === "Content Management" && (
-          <Suspense fallback={<p>Loading Content Management...</p>}>
-            <ContentManagement activeSubMenu={activeContentSubMenu} />
-          </Suspense>
-        )}
+{activeMenu === "Content Management" && (
+  <Suspense fallback={<p>Loading Content Management...</p>}>
+    {activeContentSubMenu === "Logo" && <ContentManagement activeSubMenu="Logo" />}
+    {activeContentSubMenu === "Background" && <ContentManagement activeSubMenu="Background" />}
+    {activeContentSubMenu === "Top Destinations" && (
+      <ContentManagement activeSubMenu="Top Destinations" />
+    )}
+    {activeContentSubMenu === "Highlight Events" && (
+      <ContentManagement activeSubMenu="Highlight Events" />
+    )}
+    {activeContentSubMenu === "Experience Mansalay" && (
+      <ContentManagement activeSubMenu="Experience Mansalay" />
+    )}
+  </Suspense>
+)}
+
+{/* NEW SEPARATE MENU ITEMS BELOW CONTENT MANAGEMENT */}
+{activeMenu === "Accommodation Management" && (
+  <Suspense fallback={<p>Loading Accommodation Management...</p>}>
+    <AccommodationsCMS />
+  </Suspense>
+)}
+
+{activeMenu === "Booking Management" && (
+  <Suspense fallback={<p>Loading Booking Management...</p>}>
+    <BookingCMS />
+  </Suspense>
+)}
+
 
         {activeMenu === "Map Management" && (
           <Suspense fallback={<p>Loading Map Management...</p>}>

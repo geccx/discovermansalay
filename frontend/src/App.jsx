@@ -13,6 +13,7 @@ import Register from "./pages/Register";
 import VerifyOtp from "./pages/VerifyOtp";
 import AdminDashboard from "./pages/AdminDashboard";
 import CMSDashboard from "./pages/ContentManagement";
+import DiscoverMap from "./pages/DiscoverMap";
 
 import DestinationsPage from "./pages/destinations/DestinationsPage";
 import Beaches from "./pages/destinations/Beaches";
@@ -147,6 +148,7 @@ function App() {
             <Route path="/events" element={<Events />} />
             <Route path="/about" element={<About />} />
             <Route path="/map" element={<MapPage />} />
+
             <Route path="/search" element={<Search />} />
           </Routes>
 

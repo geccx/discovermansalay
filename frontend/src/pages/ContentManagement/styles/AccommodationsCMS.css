@@ -1,0 +1,149 @@
+.accomcms-container {
+  padding: 25px;
+}
+
+.accomcms-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #033859;
+  margin-bottom: 20px;
+}
+
+.accomcms-add-btn {
+  background: #F25749;
+  color: white;
+  padding: 10px 16px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+
+.accomcms-add-btn:hover {
+  background: #d9473c;
+}
+
+.accomcms-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  background: white;
+}
+
+.accomcms-table th,
+.accomcms-table td {
+  padding: 12px;
+  border-bottom: 1px solid #ddd;
+}
+
+.accomcms-thumb {
+  height: 60px;
+  width: 90px;
+  object-fit: cover;
+  border-radius: 5px;
+}
+
+.accomcms-edit,
+.accomcms-delete {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  margin-right: 6px;
+  cursor: pointer;
+}
+
+.accomcms-edit {
+  background: #1f7ae0;
+  color: white;
+}
+
+.accomcms-edit:hover {
+  background: #1867bb;
+}
+
+.accomcms-delete {
+  background: #d9534f;
+  color: white;
+}
+
+.accomcms-delete:hover {
+  background: #b93e3b;
+}
+
+/* Modal */
+.accomcms-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 90;
+}
+
+.accomcms-modal {
+  width: 420px;
+  background: white;
+  padding: 25px;
+  border-radius: 10px;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.accomcms-input,
+.accomcms-textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  margin-bottom: 12px;
+  border-radius: 5px;
+}
+
+.accomcms-textarea {
+  height: 100px;
+  resize: none;
+}
+
+.accomcms-file-label {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 5px;
+  display: block;
+}
+
+.accomcms-file {
+  margin-bottom: 15px;
+}
+
+.accomcms-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.cancel-btn {
+  background: #ccc;
+  padding: 8px 14px;
+  border-radius: 5px;
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+.save-btn {
+  background: #F25749;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.save-btn:hover {
+  background: #d9473c;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}

@@ -7,9 +7,9 @@ import { logAdminAction } from "../../utils/adminLogger";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
-/* ------------------------------
+/* ========================================================
    AXIOS INSTANCE WITH AUTO-REFRESH
------------------------------- */
+======================================================== */
 const api = axios.create({
   baseURL: API_BASE,
 });
@@ -57,9 +57,9 @@ api.interceptors.response.use(
   }
 );
 
-/* ------------------------------
+/* ========================================================
    COMPONENT
------------------------------- */
+======================================================== */
 const AdminsPage = () => {
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -96,9 +96,9 @@ const AdminsPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  /* ------------------------------
+  /* ========================================================
      FETCH ADMINS
-  ------------------------------ */
+  ======================================================== */
   const fetchAdmins = async (
     page = 1,
     searchText = search,
@@ -130,18 +130,18 @@ const AdminsPage = () => {
     fetchAdmins(1);
   }, []);
 
-  /* ------------------------------
+  /* ========================================================
      DETAILS VIEW
-  ------------------------------ */
+  ======================================================== */
   const openAdminDetailsView = (admin) => {
     setSelectedAdmin(admin);
     setShowAdminDetails(true);
     setShowUpdateForm(false);
   };
 
-  /* ------------------------------
+  /* ========================================================
      OPEN UPDATE FORM
-  ------------------------------ */
+  ======================================================== */
   const openUpdateForm = () => {
     setAdminDetails({
       id: selectedAdmin.id,
@@ -162,9 +162,9 @@ const AdminsPage = () => {
     setShowAdminDetails(false);
   };
 
-  /* ------------------------------
+  /* ========================================================
      UPDATE ADMIN
-  ------------------------------ */
+  ======================================================== */
   const handleUpdateAdmin = async () => {
     try {
       const formData = new FormData();
@@ -178,7 +178,6 @@ const AdminsPage = () => {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      // ✔ FIXED LOGGING
       await logAdminAction("Update Admin", {
         adminId: adminDetails.id,
         email: adminDetails.email,
@@ -186,16 +185,18 @@ const AdminsPage = () => {
 
       toast.success("Admin updated successfully!");
 
-      fetchAdmins(currentPage);
-      setShowUpdateForm(false);
+      setTimeout(() => {
+        fetchAdmins(currentPage);
+        setShowUpdateForm(false);
+      }, 600);
     } catch (err) {
       toast.error(err.response?.data?.message || "Update failed");
     }
   };
 
-  /* ------------------------------
+  /* ========================================================
      CHANGE PASSWORD
-  ------------------------------ */
+  ======================================================== */
   const handleChangePassword = async () => {
     const { new_password, confirm_password } = passwords;
 
@@ -209,54 +210,94 @@ const AdminsPage = () => {
         password: new_password,
       });
 
-      // ✔ FIXED LOGGING
       await logAdminAction("Change Admin Password", {
         adminId: selectedAdmin.id,
         email: selectedAdmin.email,
       });
 
       toast.success("Password updated successfully!");
-      setShowPasswordModal(false);
+
+      setTimeout(() => setShowPasswordModal(false), 600);
     } catch (err) {
       toast.error(err.response?.data?.message || "Password update failed");
     }
   };
 
-  /* ------------------------------
-     DELETE ADMIN
-  ------------------------------ */
-  const handleDeleteAdmin = async () => {
-    if (!window.confirm("Are you sure you want to delete this admin?")) return;
+  /* ========================================================
+     DELETE ADMIN — Toastify CONFIRMATION
+  ======================================================== */
+  const handleDeleteAdmin = () => {
+    if (!selectedAdmin) return;
+
+    toast.info(
+      <div style={{ textAlign: "center" }}>
+        <p style={{ marginBottom: 10 }}>
+          Are you sure you want to delete this admin?
+        </p>
+
+        <button
+          style={{
+            background: "#dc2626",
+            color: "white",
+            border: "none",
+            padding: "6px 12px",
+            marginRight: 10,
+            cursor: "pointer",
+            borderRadius: 4,
+          }}
+          onClick={() => confirmDelete(selectedAdmin.id)}
+        >
+          Delete
+        </button>
+
+        <button
+          style={{
+            background: "#6b7280",
+            color: "white",
+            border: "none",
+            padding: "6px 12px",
+            cursor: "pointer",
+            borderRadius: 4,
+          }}
+          onClick={() => toast.dismiss()}
+        >
+          Cancel
+        </button>
+      </div>,
+      { autoClose: false, closeOnClick: false }
+    );
+  };
+
+  const confirmDelete = async (adminId) => {
+    toast.dismiss(); // close confirmation toast
 
     try {
-      await api.delete(`/api/admin/admin/${selectedAdmin.id}`);
+      await api.delete(`/api/admin/admin/${adminId}`);
 
-      // ✔ FIXED LOGGING
       await logAdminAction("Delete Admin", {
-        adminId: selectedAdmin.id,
+        adminId,
         email: selectedAdmin.email,
       });
 
-      toast.success("Admin deleted");
+      toast.success("Admin deleted successfully!");
 
-      fetchAdmins(currentPage);
-      setShowAdminDetails(false);
+      setTimeout(() => {
+        fetchAdmins(currentPage);
+        setShowAdminDetails(false);
+      }, 600);
     } catch (err) {
       toast.error(err.response?.data?.message || "Delete failed");
     }
   };
 
-  /* ------------------------------
+  /* ========================================================
      INVITE ADMIN
-  ------------------------------ */
+  ======================================================== */
   const handleInviteAdmin = async () => {
     try {
       await api.post(`/api/admin/invite`, { email: inviteEmail });
 
-      // ✔ FIXED LOGGING
-      await logAdminAction("Invite Admin", {
-        email: inviteEmail,
-      });
+      await logAdminAction("Invite Admin", { email: inviteEmail });
 
       toast.success("Invitation sent!");
 
@@ -267,9 +308,9 @@ const AdminsPage = () => {
     }
   };
 
-  /* ------------------------------
-     CLOSE MODALS
-  ------------------------------ */
+  /* ========================================================
+     CLOSE ALL MODALS
+  ======================================================== */
   const closeForms = () => {
     setShowAdminDetails(false);
     setShowUpdateForm(false);
@@ -277,9 +318,9 @@ const AdminsPage = () => {
     setShowInviteModal(false);
   };
 
-  /* ------------------------------
+  /* ========================================================
      RENDER
-  ------------------------------ */
+  ======================================================== */
   return (
     <div className="admins-page-container">
       <h2 className="admins-page-title">Admin Users Management</h2>
@@ -356,19 +397,16 @@ const AdminsPage = () => {
                     <td>{admin.firstname}</td>
                     <td>{admin.lastname}</td>
                     <td>{admin.email}</td>
-
                     <td>
                       <span className={`role-badge role-${admin.role}`}>
                         {admin.role}
                       </span>
                     </td>
-
                     <td>
                       <span className={`status-badge status-${admin.status}`}>
                         {admin.status}
                       </span>
                     </td>
-
                     <td>{admin.contact_number || "N/A"}</td>
                     <td>{admin.address || "N/A"}</td>
                   </tr>
@@ -408,21 +446,18 @@ const AdminsPage = () => {
             <p><strong>Username:</strong> {selectedAdmin.username}</p>
             <p><strong>Name:</strong> {selectedAdmin.firstname} {selectedAdmin.lastname}</p>
             <p><strong>Email:</strong> {selectedAdmin.email}</p>
-
             <p>
               <strong>Role:</strong>{" "}
               <span className={`role-badge role-${selectedAdmin.role}`}>
                 {selectedAdmin.role}
               </span>
             </p>
-
             <p>
               <strong>Status:</strong>{" "}
               <span className={`status-badge status-${selectedAdmin.status}`}>
                 {selectedAdmin.status}
               </span>
             </p>
-
             <p><strong>Contact:</strong> {selectedAdmin.contact_number || "N/A"}</p>
 
             {selectedAdmin.profile_image && (

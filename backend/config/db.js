@@ -51,7 +51,7 @@ async function ensureDatabaseExists(dbName) {
 }
 
 /* ---------------------------------------------
-   Use Railway DATABASE_URL
+   Railway DATABASE_URL
 --------------------------------------------- */
 async function createPoolFromDatabaseUrl(url) {
   return mysql.createPool({
@@ -62,7 +62,7 @@ async function createPoolFromDatabaseUrl(url) {
 }
 
 /* ---------------------------------------------
-   Use standard MySQL ENV variables (LOCAL)
+   LOCAL MySQL connection
 --------------------------------------------- */
 async function createPoolFromLocalConfig() {
   const DB_NAME =
@@ -159,6 +159,7 @@ async function ensureUserAndWishlistTables(pool) {
       item_id INT,
       name VARCHAR(255),
       category VARCHAR(255),
+      image_path VARCHAR(500),
       added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(username, item_id)
     )
@@ -168,7 +169,7 @@ async function ensureUserAndWishlistTables(pool) {
 }
 
 /* ---------------------------------------------
-   Unified Content Table
+   UNIFIED CONTENT TABLE
 --------------------------------------------- */
 async function ensureUnifiedContentTable(pool) {
   await pool.query(`
@@ -198,8 +199,39 @@ async function ensureUnifiedContentTable(pool) {
   console.log("🗂️ Unified content table ensured");
 }
 
+async function ensureAccommodationBookingTable(pool) {
+  // Create table if missing
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS accommodation_bookings (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      accommodation_id INT,
+      user_name VARCHAR(255),
+      user_email VARCHAR(255),
+      user_contact VARCHAR(50),
+      check_in DATE,
+      check_out DATE,
+      guests INT,
+      status ENUM('pending','awaiting_management','confirmed','cancelled') DEFAULT 'pending',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (accommodation_id) REFERENCES content_items(id)
+    )
+  `);
+
+  console.log("🏨 Accommodation bookings table ensured");
+
+  // ⭐ Apply schema patch to update ENUM (for existing databases)
+  await pool.query(`
+    ALTER TABLE accommodation_bookings
+    MODIFY COLUMN status 
+    ENUM('pending','awaiting_management','confirmed','cancelled')
+    DEFAULT 'pending';
+  `);
+
+  console.log("🔧 Booking status ENUM updated to include 'awaiting_management'");
+}
+
 /* ---------------------------------------------
-   Visitors & Admin Logs Tables
+   VISITORS + ADMIN LOGS tables
 --------------------------------------------- */
 async function ensureVisitorsAndLogsTables(pool) {
   await pool.query(`
@@ -209,6 +241,8 @@ async function ensureVisitorsAndLogsTables(pool) {
       browser VARCHAR(255),
       device VARCHAR(255),
       page VARCHAR(255),
+      country VARCHAR(100),
+      city VARCHAR(100),
       visit_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
@@ -228,28 +262,60 @@ async function ensureVisitorsAndLogsTables(pool) {
 }
 
 /* ---------------------------------------------
+   TOURIST SPOTS + REVIEWS tables
+--------------------------------------------- */
+async function ensureTouristSpotTables(pool) {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS tourist_spots (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(255),
+      lat DECIMAL(10,8),
+      lng DECIMAL(11,8),
+      category VARCHAR(100),
+      description TEXT,
+      media_path VARCHAR(255),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS tourist_spot_reviews (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      spot_id INT,
+      user_name VARCHAR(255),
+      rating TINYINT,
+      comment TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (spot_id) REFERENCES tourist_spots(id)
+    )
+  `);
+
+  console.log("📍 Tourist spots + reviews ensured");
+}
+
+/* ---------------------------------------------
    Initialize (Local + Railway Compatible)
 --------------------------------------------- */
 async function initialize() {
   if (pool) return pool;
 
   if (process.env.DATABASE_URL) {
-    // RAILWAY DATABASE_URL
     pool = await createPoolFromDatabaseUrl(process.env.DATABASE_URL);
     console.log("🔗 Connected using DATABASE_URL (Railway)");
   } else {
-    // LOCAL DB
     pool = await createPoolFromLocalConfig();
     console.log("🔗 Connected to LOCAL MySQL");
   }
 
-  await pool.query("SELECT 1"); // Test connection
+  await pool.query("SELECT 1");
 
-  // Auto-create tables
   await ensureUserAndWishlistTables(pool);
   await ensureSuperAdmin(pool);
   await ensureUnifiedContentTable(pool);
   await ensureVisitorsAndLogsTables(pool);
+  await ensureTouristSpotTables(pool);
+  await ensureAccommodationBookingTable(pool);
+
 
   return pool;
 }

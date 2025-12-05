@@ -1,3 +1,4 @@
+// src/pages/Restaurants.jsx
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Navbar from '../../components/Navbar';
@@ -6,10 +7,10 @@ import './styles/Restaurants.css';
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 const ENDPOINT = API_BASE ? `${API_BASE}/api/destinations` : '/api/destinations';
 
-const buildImageSrc = (imagePath) => {
-  if (!imagePath) return '/images/fallback.jpg';
-  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) return imagePath;
-  return API_BASE ? `${API_BASE}${imagePath}` : imagePath;
+const buildImageSrc = (mediaPath) => {
+  if (!mediaPath) return '/images/fallback.jpg';
+  if (mediaPath.startsWith('http')) return mediaPath;
+  return API_BASE ? `${API_BASE}${mediaPath}` : mediaPath;
 };
 
 const Restaurants = () => {
@@ -22,7 +23,7 @@ const Restaurants = () => {
       try {
         const res = await axios.get(ENDPOINT);
         const all = Array.isArray(res.data) ? res.data : [];
-        const filtered = all.filter((dest) => dest?.category === 'Restaurants');
+        const filtered = all.filter((item) => item?.category === 'Restaurants');
         setRestaurants(filtered);
       } catch (err) {
         console.error('Error fetching restaurants:', err);
@@ -30,6 +31,7 @@ const Restaurants = () => {
         setLoading(false);
       }
     };
+
     fetchRestaurants();
   }, []);
 
@@ -53,17 +55,17 @@ const Restaurants = () => {
           {loading ? (
             <p>Loading restaurants...</p>
           ) : restaurants.length > 0 ? (
-            restaurants.map((restaurant) => (
-              <div key={restaurant.id} className="restaurants-card">
+            restaurants.map((item) => (
+              <div key={item.id} className="restaurants-card">
                 <img
-                  src={buildImageSrc(restaurant.image)}
-                  alt={restaurant.name || 'Restaurant'}
+                  src={buildImageSrc(item.media_path)}
+                  alt={item.title}
                   className="restaurants-img"
                   loading="lazy"
-                  onError={(e) => { e.currentTarget.src = '/images/fallback.jpg'; }}
+                  onError={(e) => (e.currentTarget.src = '/images/fallback.jpg')}
                 />
                 <div className="restaurants-content">
-                  <h3 className="restaurants-name">{restaurant.name}</h3>
+                  <h3 className="restaurants-name">{item.title}</h3>
                 </div>
               </div>
             ))

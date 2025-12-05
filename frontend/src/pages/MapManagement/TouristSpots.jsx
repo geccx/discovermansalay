@@ -1,11 +1,230 @@
-// frontend/admin/pages/TouristSpots.jsx
+// frontend/pages/MapManagement/TouristSpots.jsx
 import React, { useEffect, useState } from "react";
 import api from "../../utils/api";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
+import L from "leaflet";
+
+import "../../styles/TouristSpots.css";
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
+/* ---------------------------------------------
+   DEFAULT MARKER (fallback)
+--------------------------------------------- */
+const defaultMarkerIcon = new L.Icon({
+  iconUrl: "/marker.png",
+  iconSize: [40, 40],
+});
+
+/* ---------------------------------------------
+   MAP SELECTOR COMPONENT
+--------------------------------------------- */
+const LocationSelectorMap = ({ lat, lng, setLat, setLng, previewUrl }) => {
+  const defaultPosition = [lat || 12.5213, lng || 121.313];
+
+  const MapEvents = () => {
+    useMapEvents({
+      click(e) {
+        setLat(e.latlng.lat);
+        setLng(e.latlng.lng);
+      },
+    });
+    return null;
+  };
+
+  // Dynamic marker image
+ const dynamicMarker = previewUrl
+  ? new L.DivIcon({
+      html: `
+        <div class="spot-circle-marker">
+          <img src="${previewUrl}" />
+        </div>
+      `,
+      className: "",
+      iconSize: [60, 60],
+      iconAnchor: [30, 60],
+    })
+  : defaultMarkerIcon;
+
+
+  return (
+    <MapContainer
+      center={defaultPosition}
+      zoom={13}
+      className="touristspot-map-container"
+    >
+      <TileLayer url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" />
+
+      <MapEvents />
+
+      {lat && lng && (
+        <Marker
+          position={[lat, lng]}
+          draggable
+          icon={dynamicMarker}
+          eventHandlers={{
+            dragend: (e) => {
+              const pos = e.target.getLatLng();
+              setLat(pos.lat);
+              setLng(pos.lng);
+            },
+          }}
+        />
+      )}
+    </MapContainer>
+  );
+};
+
+/* ---------------------------------------------
+   ADD / EDIT FORM (MODAL)
+--------------------------------------------- */
+const TouristSpotForm = ({ onSubmit, onCancel, initialData = {}, saving }) => {
+
+  const buildPreviewUrl = (url) => {
+    if (!url) return null;
+    if (API_BASE && url.startsWith("/")) {
+      return `${API_BASE.replace(/\/$/, "")}${url}`;
+    }
+    return url;
+  };
+
+  const [name, setName] = useState(initialData.name || "");
+  const [lat, setLat] = useState(initialData.lat ?? "");
+  const [lng, setLng] = useState(initialData.lng ?? "");
+  const [category, setCategory] = useState(initialData.category || "");
+
+  const [image, setImage] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(buildPreviewUrl(initialData.image_url));
+
+  const handleImage = (e) => {
+    const file = e.target.files[0];
+    setImage(file);
+    if (file) setPreviewUrl(URL.createObjectURL(file));
+  };
+
+  const submit = async (e) => {
+    e.preventDefault();
+
+    if (!name || !category || !lat || !lng) {
+      toast.error("Please fill in all fields.");
+      return;
+    }
+
+    const fd = new FormData();
+    fd.append("name", name);
+    fd.append("lat", lat);
+    fd.append("lng", lng);
+    fd.append("category", category);
+    if (image) fd.append("image", image);
+
+    await onSubmit(fd);
+  };
+
+  return (
+    <div className="touristspot-modal-overlay">
+      <div className="touristspot-modal large-modal">
+        <h2 className="modal-title">
+          {initialData.id ? "Edit Tourist Spot" : "Add Tourist Spot"}
+        </h2>
+
+        {/* MAP + IMAGE PREVIEW */}
+        <div className="touristspot-form-top">
+          <div className="map-wrapper">
+            <LocationSelectorMap
+              lat={lat}
+              lng={lng}
+              setLat={setLat}
+              setLng={setLng}
+              previewUrl={previewUrl}  // <-- FIXED
+            />
+          </div>
+
+          <div className="image-panel">
+            <div className="image-preview-box">
+              {previewUrl ? (
+                <img src={previewUrl} className="image-preview-large" alt="preview" />
+              ) : (
+                <div className="image-preview-placeholder">
+                  <span>No image selected</span>
+                </div>
+              )}
+            </div>
+
+            <label className="image-upload-btn">
+              Choose Image
+              <input type="file" accept="image/*" onChange={handleImage} hidden />
+            </label>
+          </div>
+        </div>
+
+        {/* FORM FIELDS */}
+        <form onSubmit={submit}>
+          <input
+            className="touristspot-input"
+            placeholder="Spot Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+
+          <select
+            className="touristspot-input"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            required
+          >
+            <option value="">Select Category</option>
+            <option value="restaurant">Restaurant</option>
+            <option value="hotel">Hotel</option>
+            <option value="beach">Beach</option>
+            <option value="park">Park</option>
+            <option value="cultural">Cultural Site</option>
+            <option value="mountain">Mountain</option>
+            <option value="falls">Falls</option>
+          </select>
+
+          <div className="coords-row">
+            <input
+              className="touristspot-input"
+              placeholder="Latitude"
+              type="number"
+              step="any"
+              value={lat}
+              onChange={(e) => setLat(e.target.value)}
+              required
+            />
+            <input
+              className="touristspot-input"
+              placeholder="Longitude"
+              type="number"
+              step="any"
+              value={lng}
+              onChange={(e) => setLng(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="touristspot-form-actions">
+            <button type="submit" className="touristspot-submit-btn" disabled={saving}>
+              {saving ? "Saving..." : "Save"}
+            </button>
+
+            <button type="button" className="touristspot-cancel-btn" onClick={onCancel}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+/* ---------------------------------------------
+   MAIN PAGE COMPONENT
+--------------------------------------------- */
 const TouristSpots = () => {
   const [spots, setSpots] = useState([]);
   const [editingSpot, setEditingSpot] = useState(null);
@@ -13,17 +232,14 @@ const TouristSpots = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  /* ---------------------------------------------
-     FETCH SPOTS
-  --------------------------------------------- */
   const fetchSpots = async () => {
     setLoading(true);
     try {
       const res = await api.get("/map/touristspots");
       setSpots(res.data || []);
     } catch (err) {
-      console.error("Failed to fetch spots", err);
-      toast.error("Failed to fetch tourist spots");
+      console.error(err);
+      toast.error("Failed to load tourist spots.");
     } finally {
       setLoading(false);
     }
@@ -33,34 +249,16 @@ const TouristSpots = () => {
     fetchSpots();
   }, []);
 
-  /* ---------------------------------------------
-     HELPERS
-  --------------------------------------------- */
   const getSpotImageUrl = (spot) => {
-    // Preferred: backend-provided absolute URL
     if (spot.image_url) {
+      if (API_BASE && spot.image_url.startsWith("/")) {
+        return `${API_BASE.replace(/\/$/, "")}${spot.image_url}?t=${Date.now()}`;
+      }
       return `${spot.image_url}?t=${Date.now()}`;
     }
-
-    // Fallback: build from media_path
-    if (spot.media_path) {
-      const filename = encodeURIComponent(spot.media_path);
-      if (API_BASE) {
-        return `${API_BASE.replace(
-          /\/$/,
-          ""
-        )}/uploads/touristspotsmap/${filename}?t=${Date.now()}`;
-      }
-      return `/uploads/touristspotsmap/${filename}?t=${Date.now()}`;
-    }
-
-    // Final fallback
     return "/images/fallback.jpg";
   };
 
-  /* ---------------------------------------------
-     CRUD HANDLERS
-  --------------------------------------------- */
   const handleAdd = async (formData) => {
     setSaving(true);
     try {
@@ -69,12 +267,10 @@ const TouristSpots = () => {
       });
       toast.success("Spot added successfully!");
       setAdding(false);
-      await fetchSpots();
+      fetchSpots();
     } catch (err) {
       console.error(err);
-      const message =
-        err?.response?.data?.error || "Failed to add spot. Check console.";
-      toast.error(message);
+      toast.error("Failed to add spot.");
     } finally {
       setSaving(false);
     }
@@ -87,163 +283,31 @@ const TouristSpots = () => {
       await api.put(`/map/touristspots/${editingSpot.id}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      toast.success("Spot updated successfully!");
+      toast.success("Spot updated!");
       setEditingSpot(null);
-      await fetchSpots();
+      fetchSpots();
     } catch (err) {
       console.error(err);
-      const message =
-        err?.response?.data?.error || "Failed to update spot. Check console.";
-      toast.error(message);
+      toast.error("Failed to update spot.");
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this spot?"
-    );
-    if (!confirmDelete) return;
+    if (!window.confirm("Delete this tourist spot?")) return;
     try {
       await api.delete(`/map/touristspots/${id}`);
-      toast.success("Spot deleted");
-      await fetchSpots();
+      toast.success("Spot deleted.");
+      fetchSpots();
     } catch (err) {
-      console.error(err);
-      const message =
-        err?.response?.data?.error || "Failed to delete spot. Check console.";
-      toast.error(message);
+      toast.error("Failed to delete spot.");
     }
   };
 
-  /* ---------------------------------------------
-     MODAL FORM
-  --------------------------------------------- */
-  const TouristSpotForm = ({ onSubmit, initialData = {}, onCancel }) => {
-    const [name, setName] = useState(initialData.name || "");
-    const [lat, setLat] = useState(
-      initialData.lat !== undefined && initialData.lat !== null
-        ? initialData.lat
-        : ""
-    );
-    const [lng, setLng] = useState(
-      initialData.lng !== undefined && initialData.lng !== null
-        ? initialData.lng
-        : ""
-    );
-    const [category, setCategory] = useState(initialData.category || "");
-    const [image, setImage] = useState(null);
-
-    const handleSubmit = async (e) => {
-      e.preventDefault();
-
-      if (!name || lat === "" || lng === "" || !category) {
-        toast.error("Please fill all required fields.");
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append("name", name);
-      formData.append("lat", lat);
-      formData.append("lng", lng);
-      formData.append("category", category);
-      if (image) formData.append("image", image);
-
-      await onSubmit(formData);
-    };
-
-    return (
-      <div className="touristspot-modal-overlay">
-        <div className="touristspot-modal">
-          <h3 className="touristspot-form-title">
-            {initialData.id ? "Edit" : "Add"} Tourist Spot
-          </h3>
-          <form onSubmit={handleSubmit} className="touristspot-form">
-            <input
-              type="text"
-              className="touristspot-input"
-              placeholder="Name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
-
-            <input
-              type="number"
-              step="any"
-              className="touristspot-input"
-              placeholder="Latitude"
-              value={lat}
-              onChange={(e) => setLat(e.target.value)}
-              required
-            />
-
-            <input
-              type="number"
-              step="any"
-              className="touristspot-input"
-              placeholder="Longitude"
-              value={lng}
-              onChange={(e) => setLng(e.target.value)}
-              required
-            />
-
-            <select
-              className="touristspot-input"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              required
-            >
-              <option value="">Select Category</option>
-              <option value="restaurant">Restaurant</option>
-              <option value="hotel">Hotel</option>
-              <option value="beach">Beach</option>
-              <option value="park">Park</option>
-              <option value="cultural">Cultural Site</option>
-              <option value="mountain">Mountain</option>
-              <option value="waterfall">Waterfall</option>
-            </select>
-
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setImage(e.target.files[0])}
-            />
-
-            <div className="touristspot-form-actions">
-              <button
-                type="submit"
-                className="touristspot-submit-btn"
-                disabled={saving}
-              >
-                {saving ? "Saving..." : "Save"}
-              </button>
-              <button
-                type="button"
-                onClick={onCancel}
-                className="touristspot-cancel-btn"
-                disabled={saving}
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    );
-  };
-
-  /* ---------------------------------------------
-     RENDER
-  --------------------------------------------- */
   return (
     <div className="experiencecms-container">
-      <button
-        className="touristspot-add-btn"
-        onClick={() => setAdding(true)}
-        disabled={loading}
-      >
+      <button className="touristspot-add-btn" onClick={() => setAdding(true)}>
         + Add New Spot
       </button>
 
@@ -251,14 +315,16 @@ const TouristSpots = () => {
         <TouristSpotForm
           onSubmit={handleAdd}
           onCancel={() => setAdding(false)}
+          saving={saving}
         />
       )}
 
       {editingSpot && (
         <TouristSpotForm
-          onSubmit={handleEdit}
           initialData={editingSpot}
+          onSubmit={handleEdit}
           onCancel={() => setEditingSpot(null)}
+          saving={saving}
         />
       )}
 
@@ -266,43 +332,21 @@ const TouristSpots = () => {
         <div>Loading tourist spots...</div>
       ) : (
         <div className="touristspot-card-grid">
-          {spots.length === 0 && (
-            <div style={{ marginTop: 16 }}>No tourist spots yet.</div>
-          )}
           {spots.map((spot) => (
             <div key={spot.id} className="touristspot-card">
               <img
                 src={getSpotImageUrl(spot)}
                 alt={spot.name}
                 className="touristspot-card-image"
-                onError={(e) => {
-                  e.currentTarget.src = "/images/fallback.jpg";
-                }}
               />
-              <h4>{spot.name}</h4>
-              <p>
-                <strong>Lat:</strong> {spot.lat}
-              </p>
-              <p>
-                <strong>Lng:</strong> {spot.lng}
-              </p>
-              <p>
-                <strong>Category:</strong> {spot.category}
-              </p>
-              <div className="touristspot-card-actions">
-                <button
-                  className="experiencecms-edit-btn"
-                  onClick={() => setEditingSpot(spot)}
-                >
-                  Edit
-                </button>
-                <button
-                  className="experiencecms-delete-btn"
-                  onClick={() => handleDelete(spot.id)}
-                >
-                  Delete
-                </button>
-              </div>
+
+              <h3>{spot.name}</h3>
+              <p><strong>Category:</strong> {spot.category}</p>
+              <p><strong>Lat:</strong> {spot.lat}</p>
+              <p><strong>Lng:</strong> {spot.lng}</p>
+
+              <button onClick={() => setEditingSpot(spot)}>Edit</button>
+              <button onClick={() => handleDelete(spot.id)}>Delete</button>
             </div>
           ))}
         </div>

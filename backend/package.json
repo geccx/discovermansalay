@@ -7,14 +7,18 @@
     "dev": "nodemon index.js"
   },
   "dependencies": {
+    "axios": "^1.13.2",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "express-rate-limit": "^8.2.1",
     "jsonwebtoken": "^9.0.2",
+    "leaflet-draw": "^1.0.4",
+    "leaflet-geosearch": "^4.2.2",
     "multer": "^2.0.1",
     "mysql2": "^3.14.1",
+    "node-fetch": "^3.3.2",
     "nodemailer": "^7.0.11",
     "qrcode": "^1.5.4",
     "recharts": "^3.5.1"

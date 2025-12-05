@@ -1,65 +1,97 @@
-const express = require('express');
-const { getPool } = require('../../config/db');
+const express = require("express");
+const { getPool } = require("../../config/db");
 const router = express.Router();
 
-// GET all wishlist items for a user
-router.get('/:username', async (req, res) => {
+/* ======================================================
+   GET all wishlist items for a user
+====================================================== */
+router.get("/:username", async (req, res) => {
   const { username } = req.params;
+
   try {
     const pool = await getPool();
-    const [rows] = await pool.query('SELECT * FROM wishlist WHERE username = ?', [username]);
+    const [rows] = await pool.query(
+      `SELECT id, username, item_id, name, category, image_path, added_at
+       FROM wishlist
+       WHERE username = ?
+       ORDER BY added_at DESC`,
+      [username]
+    );
 
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ message: 'Failed to fetch wishlist', error: err });
+    console.error("Wishlist Fetch Error:", err);
+    res.status(500).json({ message: "Failed to fetch wishlist" });
   }
 });
 
-// ADD a wishlist item
-router.post('/', async (req, res) => {
-const { username, item_id, name, category, image_path } = req.body;
+/* ======================================================
+   ADD an item to wishlist
+====================================================== */
+router.post("/", async (req, res) => {
+  const { username, item_id, name, category, image_path } = req.body;
 
-
-if (!username || !item_id || !name || !category || !image_path) {
-  return res.status(400).json({ message: 'Missing fields' });
-}
+  if (!username || !item_id || !name || !category || !image_path) {
+    return res.status(400).json({ message: "Missing required fields" });
+  }
 
   try {
     const pool = await getPool();
 
     // Prevent duplicates
     const [existing] = await pool.query(
-      'SELECT * FROM wishlist WHERE username = ? AND item_id = ?',
+      "SELECT id FROM wishlist WHERE username = ? AND item_id = ? LIMIT 1",
       [username, item_id]
     );
+
     if (existing.length > 0) {
-      return res.status(409).json({ message: 'Item already in wishlist' });
+      return res.status(409).json({ message: "Item already in wishlist" });
     }
 
-   await pool.query(
-  'INSERT INTO wishlist (username, item_id, name, category, image_path) VALUES (?, ?, ?, ?, ?)',
-  [username, item_id, name, category, image_path]
-);
+    const [result] = await pool.query(
+      `INSERT INTO wishlist (username, item_id, name, category, image_path)
+       VALUES (?, ?, ?, ?, ?)`,
+      [username, item_id, name, category, image_path]
+    );
 
-
-    res.status(201).json({ message: 'Item added to wishlist' });
+    res.status(201).json({
+      message: "Item added to wishlist",
+      item: {
+        id: result.insertId,
+        username,
+        item_id,
+        name,
+        category,
+        image_path,
+      },
+    });
   } catch (err) {
-    res.status(500).json({ message: 'Failed to add item', error: err });
+    console.error("Wishlist Add Error:", err);
+    res.status(500).json({ message: "Failed to add item" });
   }
 });
 
-// DELETE an item
-router.delete('/:username/:item_id', async (req, res) => {
+/* ======================================================
+   DELETE an item
+====================================================== */
+router.delete("/:username/:item_id", async (req, res) => {
   const { username, item_id } = req.params;
+
   try {
     const pool = await getPool();
-    await pool.query(
-      'DELETE FROM wishlist WHERE username = ? AND item_id = ?',
+
+    const [result] = await pool.query(
+      "DELETE FROM wishlist WHERE username = ? AND item_id = ?",
       [username, item_id]
     );
-    res.json({ message: 'Item removed from wishlist' });
+
+    if (result.affectedRows === 0)
+      return res.status(404).json({ message: "Item not found" });
+
+    res.json({ message: "Item removed from wishlist", item_id });
   } catch (err) {
-    res.status(500).json({ message: 'Failed to delete item', error: err });
+    console.error("Wishlist Delete Error:", err);
+    res.status(500).json({ message: "Failed to delete item" });
   }
 });
 

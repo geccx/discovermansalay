@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import "../styles/adminInvite.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
@@ -16,7 +18,6 @@ const UserInviteRegister = () => {
 
   const [loading, setLoading] = useState(true);
   const [inviteEmail, setInviteEmail] = useState("");
-  const [error, setError] = useState("");
 
   const [form, setForm] = useState({
     username: "",
@@ -37,9 +38,7 @@ const UserInviteRegister = () => {
 
         setInviteEmail(res.data.email);
       } catch (err) {
-        setError(
-          err.response?.data?.message || "Invalid or expired invitation."
-        );
+        toast.error(err.response?.data?.message || "Invalid or expired invitation.");
       } finally {
         setLoading(false);
       }
@@ -54,10 +53,9 @@ const UserInviteRegister = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
 
     if (form.password !== form.confirmPassword) {
-      setError("Passwords do not match.");
+      toast.error("Passwords do not match.");
       return;
     }
 
@@ -67,10 +65,10 @@ const UserInviteRegister = () => {
         ...form,
       });
 
-      alert("Your account is now active!");
-      navigate("/login");
+      toast.success("Your account is now active!");
+      setTimeout(() => navigate("/login"), 1200);
     } catch (err) {
-      setError(
+      toast.error(
         err.response?.data?.message ||
           "Failed to create your account. Please try again."
       );
@@ -83,9 +81,8 @@ const UserInviteRegister = () => {
         <h2 className="invite-title">Complete Your Registration</h2>
 
         {loading && <p>Validating invitation...</p>}
-        {error && <p className="invite-error">{error}</p>}
 
-        {!loading && !error && (
+        {!loading && (
           <form onSubmit={handleSubmit} className="invite-form">
             <p className="invite-label">
               Invitation for: <strong>{inviteEmail}</strong>

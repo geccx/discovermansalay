@@ -15,19 +15,8 @@ export default function Explore() {
   const [destinations, setDestinations] = useState([]);
   const { wishlist, dispatch } = useContext(WishlistContext);
 
-  // Safe JSON parse
-  const safeParse = (value) => {
-    try {
-      if (!value || value === "undefined" || value === "null") return null;
-      return JSON.parse(value);
-    } catch (err) {
-      console.error("Invalid JSON in localStorage:", value);
-      return null;
-    }
-  };
-
-  const user = safeParse(localStorage.getItem("user"));
-  const username = user?.username || null;
+  const user = JSON.parse(localStorage.getItem('user'));
+  const username = user?.username;
 
   // Fetch destinations
   useEffect(() => {
