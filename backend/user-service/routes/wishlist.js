@@ -10,6 +10,7 @@ router.get("/:username", async (req, res) => {
 
   try {
     const pool = await getPool();
+
     const [rows] = await pool.query(
       `SELECT id, username, item_id, name, category, image_path, added_at
        FROM wishlist
@@ -18,10 +19,20 @@ router.get("/:username", async (req, res) => {
       [username]
     );
 
-    res.json(rows);
+    // Always return consistent object format
+    return res.json({
+      success: true,
+      wishlist: rows || []
+    });
+
   } catch (err) {
     console.error("Wishlist Fetch Error:", err);
-    res.status(500).json({ message: "Failed to fetch wishlist" });
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch wishlist",
+      error: err.message
+    });
   }
 });
 

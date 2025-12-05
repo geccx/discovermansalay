@@ -201,21 +201,6 @@ export default function DashboardOverview() {
       {/* ANALYTICS CHART GRID */}
       <div className="overview-charts-grid">
 
-        {/* Browser Pie */}
-        <div className="overview-chart-card">
-          <h3>Browser Usage</h3>
-          <ResponsiveContainer width="100%" height={260}>
-            <PieChart>
-              <Pie data={browserData} dataKey="value" nameKey="name" outerRadius={80} label>
-                {browserData.map((entry, idx) => (
-                  <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
-                ))}
-              </Pie>
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-
         {/* Device Pie */}
         <div className="overview-chart-card">
           <h3>Devices</h3>
