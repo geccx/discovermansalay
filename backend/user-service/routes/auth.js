@@ -389,18 +389,20 @@ router.post("/login", async (req, res) => {
     if (!match)
       return res.status(401).json({ message: "Incorrect password." });
 
-    // Admin / Superadmin: 2FA with admin OTP
+    // --------------------------------------------------------
+    // ADMIN / SUPERADMIN → REQUIRE 2FA OTP
+    // --------------------------------------------------------
     if (user.role === "admin" || user.role === "superadmin") {
       const otp = generateOtp();
-      const expires = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+      const expires = new Date(Date.now() + 5 * 60 * 1000);
 
       await pool.query(
         `UPDATE users SET admin_otp_code = ?, admin_otp_expires_at = ? WHERE id = ?`,
         [otp, expires, user.id]
       );
 
-      // Send Admin OTP email
-      await transporter.sendMail({
+      // ⭐ NON-BLOCKING EMAIL SENDING (NO await)
+      transporter.sendMail({
         from: FROM_EMAIL,
         to: user.email,
         subject: "Your Admin Login Verification Code",
@@ -410,8 +412,11 @@ router.post("/login", async (req, res) => {
           <h2>${otp}</h2>
           <p>This code expires in 5 minutes.</p>
         `,
+      }).catch(err => {
+        console.error("❌ Admin OTP email failed:", err.message);
       });
 
+      // ⭐ Respond immediately (no hanging request)
       return res.json({
         requiresAdminOtp: true,
         message: "Enter the OTP sent to your email.",
@@ -420,7 +425,9 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // Normal user login
+    // --------------------------------------------------------
+    // NORMAL USER LOGIN
+    // --------------------------------------------------------
     const token = jwt.sign(
       { id: user.id, role: user.role },
       JWT_SECRET,
