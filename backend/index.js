@@ -19,26 +19,29 @@ if (!process.env.RAILWAY_ENVIRONMENT) {
    INIT EXPRESS
 --------------------------------------------- */
 const app = express();
+
+// IMPORTANT: Fix express-rate-limit + Railway reverse proxy
+app.set("trust proxy", 1);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 /* ---------------------------------------------
-   CORS CONFIG (FIXED)
+   CORS CONFIG — FULLY FIXED
 --------------------------------------------- */
-
 const allowedOrigins = [
   "http://localhost:5173",
-  "http://localhost:5174",
   "http://127.0.0.1:5173",
+  "http://localhost:5174",
   "http://127.0.0.1:5174",
-  process.env.FRONTEND_URL,           // your deployed frontend
-  process.env.RAILWAY_PUBLIC_DOMAIN,  // backend public domain
+  process.env.FRONTEND_URL,           // Your deployed frontend
+  process.env.RAILWAY_PUBLIC_DOMAIN,  // Backend domain
 ].filter(Boolean);
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow server-to-server or curl/no-origin
+      // Allow server/server, Postman, curl, axios without origin
       if (!origin) return callback(null, true);
 
       const isAllowed = allowedOrigins.some((url) =>
@@ -48,13 +51,13 @@ app.use(
       if (isAllowed) return callback(null, true);
 
       console.warn("❌ CORS blocked:", origin);
-      callback(new Error("Not allowed by CORS"));
+      return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
   })
 );
 
-
+// Log all incoming requests
 app.use((req, res, next) => {
   console.log(`[${req.method}] ${req.originalUrl}`);
   next();
@@ -71,7 +74,7 @@ async function initDatabase() {
     await pool.query("SELECT 1");
     console.log("✅ MySQL connection established");
   } catch (err) {
-    console.error("❌ Database connection FAILED:", err.message);
+    console.error("❌ Database connection FAILED:", err);
   }
 }
 
@@ -163,8 +166,6 @@ loadService("Booking Service", "/api/booking", () =>
   require("./booking-service/routes/booking")
 );
 
-
-
 /* ---------------------------------------------
    DESTINATIONS + MAP
 --------------------------------------------- */
@@ -172,7 +173,6 @@ loadService("Destinations Service", "/api/destinations", () =>
   require("./destination-service/routes/destinations")
 );
 
-// Map service for tourist spots (Leaflet admin + frontend)
 loadService("Map Service", "/map/touristspots", () =>
   require("./map-service/routes/touristSpots")
 );
