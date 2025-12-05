@@ -1,0 +1,121 @@
+/* MAIN CONTAINER */
+.dashboard-overview {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+/* GRID FOR SUMMARY CARDS */
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 18px;
+}
+
+.overview-card {
+  background: #ffffff;
+  padding: 18px 20px;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  transition: 0.2s ease;
+  text-align: center;
+  border-left: 6px solid transparent;
+}
+
+.overview-card:hover {
+  transform: translateY(-4px);
+}
+
+.overview-card h3 {
+  font-size: 0.95rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.overview-card p {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-top: 8px;
+  color: #111827;
+}
+
+/* COLOR TAGS */
+.blue { border-left-color: #3b82f6; }
+.green { border-left-color: #10b981; }
+.purple { border-left-color: #8b5cf6; }
+.orange { border-left-color: #f59e0b; }
+.pink { border-left-color: #ec4899; }
+.yellow { border-left-color: #facc15; }
+.teal { border-left-color: #14b8a6; }
+
+/* MAIN CHART CONTAINER */
+.overview-chart-card {
+  background: white;
+  padding: 18px 20px;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+}
+
+.overview-chart-card h3 {
+  margin-bottom: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* CHART GRID FOR EXTRA ANALYTICS */
+.overview-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+  gap: 18px;
+}
+
+.overview-chart-card.wide {
+  grid-column: 1 / -1;
+}
+
+/* TOOLTIP STYLING */
+.recharts-tooltip-wrapper {
+  font-size: 0.8rem !important;
+}
+
+/* TABLE SECTION — if you add later */
+.dashboard-table-section {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+}
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  .overview-charts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .overview-grid {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  }
+
+  .overview-card p {
+    font-size: 1.6rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .dashboard-overview {
+    padding: 12px;
+  }
+
+  .overview-card {
+    padding: 14px;
+  }
+
+  .overview-card p {
+    font-size: 1.4rem;
+  }
+
+  .overview-chart-card {
+    padding: 14px;
+  }
+}

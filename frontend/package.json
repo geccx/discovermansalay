@@ -33,6 +33,7 @@
     "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.6.0",
     "react-toastify": "^11.0.5",
+    "recharts": "^3.5.1",
     "serve": "^14.2.5",
     "swiper": "^11.2.6",
     "uuid": "^11.1.0"

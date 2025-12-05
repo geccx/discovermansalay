@@ -11,7 +11,7 @@ import AdminOtpModal from "../components/AdminOtpModal";
 import "../styles/pages.css";
 import "../styles/usermanagement.css";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 export default function Login() {
   const [form, setForm] = useState({ identifier: "", password: "" });
@@ -23,7 +23,9 @@ export default function Login() {
 
   const navigate = useNavigate();
 
-  // Auto redirect when already logged in
+  /* ------------------------------------------------
+     AUTO-REDIRECT IF ALREADY LOGGED IN
+  ------------------------------------------------ */
   useEffect(() => {
     try {
       const token = localStorage.getItem("token");
@@ -39,22 +41,28 @@ export default function Login() {
         }
 
         if (storedUser.role === "admin" || storedUser.role === "superadmin") {
-          navigate("/admin");
+          navigate("/admin", { replace: true });
         } else {
-          navigate("/");
+          navigate("/", { replace: true });
         }
       }
     } catch {
-      localStorage.removeItem("user");
       localStorage.removeItem("token");
+      localStorage.removeItem("user");
     }
   }, [navigate]);
 
+  /* ------------------------------------------------
+     INPUT HANDLER
+  ------------------------------------------------ */
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     setError("");
   };
 
+  /* ------------------------------------------------
+     SUBMIT LOGIN
+  ------------------------------------------------ */
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -65,15 +73,15 @@ export default function Login() {
     try {
       const res = await axios.post(`${API_BASE}/api/user/login`, form);
 
-      // ------------- Admin 2FA Required -------------
+      /* ────────────────  ADMIN 2FA REQUIRED  ──────────────── */
       if (res.data.requiresAdminOtp) {
         setAdminOtpUserId(res.data.userId);
         setShowAdminOtp(true);
-        toast.info("Enter the OTP sent to your email.");
+        toast.info("Enter the OTP sent to your admin email.");
         return;
       }
 
-      // ------------ Normal user login ------------
+      /* ────────────────  NORMAL USER LOGIN  ──────────────── */
       const user = res.data.user;
 
       localStorage.setItem("token", res.data.token);
@@ -100,6 +108,7 @@ export default function Login() {
       <h2 className="login-title-unique">Login</h2>
 
       <form onSubmit={handleSubmit}>
+        {/* Email / Username */}
         <div className="login-input-wrapper-unique">
           <FaUserCircle className="login-input-icon-unique" />
           <input
@@ -112,6 +121,7 @@ export default function Login() {
           />
         </div>
 
+        {/* Password */}
         <div className="login-input-wrapper-unique">
           <RiLockPasswordFill className="login-input-icon-unique" />
           <input
@@ -123,21 +133,29 @@ export default function Login() {
             className="login-input-unique login-input-with-icon-unique"
           />
 
+          {/* Eye Icon */}
           <span
             className="login-password-eye-unique"
             onClick={() => setShowPassword(!showPassword)}
           >
-            {showPassword ? <AiOutlineEyeInvisible size={20} /> : <AiOutlineEye size={20} />}
+            {showPassword ? (
+              <AiOutlineEyeInvisible size={20} />
+            ) : (
+              <AiOutlineEye size={20} />
+            )}
           </span>
         </div>
 
+        {/* Submit Button */}
         <button type="submit" className="login-submit-button-unique">
           Login
         </button>
 
+        {/* Error Message */}
         {error && <div className="login-error-message-unique">{error}</div>}
       </form>
 
+      {/* Register Link */}
       <div className="login-register-link-unique">
         Don’t have an account?{" "}
         <Link to="/register" className="login-register-anchor-unique">
@@ -145,7 +163,7 @@ export default function Login() {
         </Link>
       </div>
 
-      {/* Admin OTP Modal */}
+      {/* ADMIN OTP MODAL */}
       {showAdminOtp && (
         <AdminOtpModal
           userId={adminOtpUserId}

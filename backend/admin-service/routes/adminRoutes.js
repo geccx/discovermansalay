@@ -155,6 +155,32 @@ router.get("/invite/validate", async (req, res) => {
   }
 });
 
+router.get("/stats", async (req, res) => {
+  try {
+    const pool = await getPool();
+
+    // FIXED: Count all admin roles
+    const [adminRows] = await pool.query(
+      "SELECT COUNT(*) AS count FROM users WHERE role IN ('admin', 'superadmin')"
+    );
+
+    const [userRows] = await pool.query(
+      "SELECT COUNT(*) AS count FROM users WHERE role = 'user'"
+    );
+
+    res.json({
+      adminCount: adminRows[0].count,
+      userCount: userRows[0].count,
+    });
+  } catch (error) {
+    console.error("🔥 STATS ERROR:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+
+
 // Complete registration from invite
 // POST /api/admin/register-from-invite
 // body: { token, username, firstname, lastname, password, contact_number, address }

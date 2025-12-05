@@ -1,6 +1,8 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { useEffect } from "react";
+import axios from "axios";
 
 import { AuthProvider } from "./context/AuthContext";
 import { WishlistProvider } from "./contexts/WishlistContext";
@@ -30,11 +32,39 @@ import Terms from "./pages/Terms";
 
 import ProtectedRoute from "./routes/ProtectedRoute";
 import AdminRoute from "./routes/AdminRoute";
+
 import AdminInviteRegister from "./pages/AdminInviteRegister";
 import UserInviteRegister from "./pages/UserInviteRegister";
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+
 // ------------------------------------------------------------
-// 🔒 USER-ONLY ROUTE (ADMIN CANNOT ACCESS USER PAGES)
+// 🔍 AUTO VISITOR TRACKING (fires on every route change)
+// ------------------------------------------------------------
+function VisitorTracker() {
+  const location = useLocation();
+
+  useEffect(() => {
+    async function trackVisit() {
+      try {
+        await axios.post(`${API_BASE}/api/visitors/track`, {
+          browser: navigator.userAgent,
+          device: navigator.platform,
+          page: location.pathname,
+        });
+      } catch (err) {
+        console.error("Visitor track failed:", err?.response?.data || err);
+      }
+    }
+
+    trackVisit();
+  }, [location.pathname]);
+
+  return null;
+}
+
+// ------------------------------------------------------------
+// 🔒 USER-ONLY ROUTE (ADMIN cannot access user pages)
 // ------------------------------------------------------------
 function UserOnlyRoute({ children }) {
   const rawUser = localStorage.getItem("user");
@@ -59,8 +89,9 @@ function App() {
       <AuthProvider>
         <WishlistProvider>
 
-          <Routes>
+          <VisitorTracker />
 
+          <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
@@ -68,7 +99,7 @@ function App() {
             <Route path="/verify-otp" element={<VerifyOtp />} />
             <Route path="/terms" element={<Terms />} />
 
-            {/* User Only Routes */}
+            {/* User Only */}
             <Route
               path="/wishlist"
               element={
@@ -80,7 +111,7 @@ function App() {
               }
             />
 
-            {/* Admin Only */}
+            {/* ADMIN ONLY */}
             <Route
               path="/admin"
               element={
@@ -90,20 +121,18 @@ function App() {
               }
             />
 
-            {/* Admin Invite Registration */}
+            {/* INVITE ROUTES */}
             <Route path="/admin/register" element={<AdminInviteRegister />} />
             <Route path="/invite/register" element={<UserInviteRegister />} />
 
-
-
-            {/* CMS (should not be user accessible) */}
-            <Route 
-              path="/cms" 
+            {/* CMS */}
+            <Route
+              path="/cms"
               element={
                 <AdminRoute>
                   <CMSDashboard />
                 </AdminRoute>
-              } 
+              }
             />
 
             {/* Public Pages */}
@@ -119,7 +148,6 @@ function App() {
             <Route path="/about" element={<About />} />
             <Route path="/map" element={<MapPage />} />
             <Route path="/search" element={<Search />} />
-
           </Routes>
 
           <ToastContainer position="top-right" autoClose={3000} />

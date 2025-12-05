@@ -3,6 +3,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "../../styles/usermanagement.css";
+import { logAdminAction } from "../../utils/adminLogger";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
@@ -26,7 +27,6 @@ api.interceptors.response.use(
   async (err) => {
     const original = err.config;
 
-    // refresh failed → logout
     if (original._retryRefresh) {
       localStorage.removeItem("admin_token");
       localStorage.removeItem("user");
@@ -34,7 +34,6 @@ api.interceptors.response.use(
       return Promise.reject(err);
     }
 
-    // attempt refresh once
     if (err.response?.status === 401 && !original._retry) {
       original._retry = true;
 
@@ -100,7 +99,11 @@ const AdminsPage = () => {
   /* ------------------------------
      FETCH ADMINS
   ------------------------------ */
-  const fetchAdmins = async (page = 1, searchText = search, status = statusFilter) => {
+  const fetchAdmins = async (
+    page = 1,
+    searchText = search,
+    status = statusFilter
+  ) => {
     setLoading(true);
 
     try {
@@ -108,9 +111,7 @@ const AdminsPage = () => {
         `/api/admin/list?page=${page}&limit=10&search=${searchText}&status=${status}`
       );
 
-      const list = res.data.users || [];
-
-      const normalized = list.map((admin) => ({
+      const normalized = (res.data.users || []).map((admin) => ({
         ...admin,
         profile_image: admin.profile_image?.replace(/\\/g, "/") || "",
       }));
@@ -177,7 +178,14 @@ const AdminsPage = () => {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
+      // ✔ FIXED LOGGING
+      await logAdminAction("Update Admin", {
+        adminId: adminDetails.id,
+        email: adminDetails.email,
+      });
+
       toast.success("Admin updated successfully!");
+
       fetchAdmins(currentPage);
       setShowUpdateForm(false);
     } catch (err) {
@@ -201,6 +209,12 @@ const AdminsPage = () => {
         password: new_password,
       });
 
+      // ✔ FIXED LOGGING
+      await logAdminAction("Change Admin Password", {
+        adminId: selectedAdmin.id,
+        email: selectedAdmin.email,
+      });
+
       toast.success("Password updated successfully!");
       setShowPasswordModal(false);
     } catch (err) {
@@ -209,14 +223,22 @@ const AdminsPage = () => {
   };
 
   /* ------------------------------
-     DELETE ADMIN — now allowed for all admins
+     DELETE ADMIN
   ------------------------------ */
   const handleDeleteAdmin = async () => {
     if (!window.confirm("Are you sure you want to delete this admin?")) return;
 
     try {
       await api.delete(`/api/admin/admin/${selectedAdmin.id}`);
+
+      // ✔ FIXED LOGGING
+      await logAdminAction("Delete Admin", {
+        adminId: selectedAdmin.id,
+        email: selectedAdmin.email,
+      });
+
       toast.success("Admin deleted");
+
       fetchAdmins(currentPage);
       setShowAdminDetails(false);
     } catch (err) {
@@ -225,12 +247,19 @@ const AdminsPage = () => {
   };
 
   /* ------------------------------
-     INVITE ADMIN — now allowed for all admins
+     INVITE ADMIN
   ------------------------------ */
   const handleInviteAdmin = async () => {
     try {
       await api.post(`/api/admin/invite`, { email: inviteEmail });
+
+      // ✔ FIXED LOGGING
+      await logAdminAction("Invite Admin", {
+        email: inviteEmail,
+      });
+
       toast.success("Invitation sent!");
+
       setInviteEmail("");
       setShowInviteModal(false);
     } catch (err) {
@@ -282,7 +311,7 @@ const AdminsPage = () => {
         </select>
       </div>
 
-      {/* INVITE BUTTON (always visible) */}
+      {/* INVITE BUTTON */}
       {!showAdminDetails && !showUpdateForm && (
         <button
           className="admins-page-add-btn"
@@ -292,7 +321,7 @@ const AdminsPage = () => {
         </button>
       )}
 
-      {/* MAIN TABLE */}
+      {/* ADMIN LIST TABLE */}
       {!loading && !showAdminDetails && !showUpdateForm && (
         <>
           <table className="admins-page-table">
@@ -370,22 +399,15 @@ const AdminsPage = () => {
         </>
       )}
 
-      {/* DETAILS MODAL */}
+      {/* ADMIN DETAILS MODAL */}
       {showAdminDetails && selectedAdmin && (
         <div className="admins-page-modal-overlay">
           <div className="admins-page-modal-form">
             <h3>Admin Details</h3>
 
-            <p>
-              <strong>Username:</strong> {selectedAdmin.username}
-            </p>
-            <p>
-              <strong>Name:</strong> {selectedAdmin.firstname}{" "}
-              {selectedAdmin.lastname}
-            </p>
-            <p>
-              <strong>Email:</strong> {selectedAdmin.email}
-            </p>
+            <p><strong>Username:</strong> {selectedAdmin.username}</p>
+            <p><strong>Name:</strong> {selectedAdmin.firstname} {selectedAdmin.lastname}</p>
+            <p><strong>Email:</strong> {selectedAdmin.email}</p>
 
             <p>
               <strong>Role:</strong>{" "}
@@ -401,9 +423,7 @@ const AdminsPage = () => {
               </span>
             </p>
 
-            <p>
-              <strong>Contact:</strong> {selectedAdmin.contact_number || "N/A"}
-            </p>
+            <p><strong>Contact:</strong> {selectedAdmin.contact_number || "N/A"}</p>
 
             {selectedAdmin.profile_image && (
               <img
@@ -416,7 +436,6 @@ const AdminsPage = () => {
             <div className="admins-page-button-group">
               <button onClick={openUpdateForm}>Update</button>
 
-              {/* DELETE BUTTON (now always visible) */}
               <button
                 className="admins-page-delete-btn"
                 onClick={handleDeleteAdmin}
@@ -427,6 +446,7 @@ const AdminsPage = () => {
               <button onClick={() => setShowPasswordModal(true)}>
                 Change Password
               </button>
+
               <button className="admins-page-cancel-btn" onClick={closeForms}>
                 Close
               </button>
@@ -486,7 +506,6 @@ const AdminsPage = () => {
               <label>Username</label>
               <input
                 type="text"
-                name="username"
                 value={adminDetails.username}
                 onChange={(e) =>
                   setAdminDetails({ ...adminDetails, username: e.target.value })
@@ -498,7 +517,6 @@ const AdminsPage = () => {
               <label>First Name</label>
               <input
                 type="text"
-                name="firstname"
                 value={adminDetails.firstname}
                 onChange={(e) =>
                   setAdminDetails({
@@ -513,7 +531,6 @@ const AdminsPage = () => {
               <label>Last Name</label>
               <input
                 type="text"
-                name="lastname"
                 value={adminDetails.lastname}
                 onChange={(e) =>
                   setAdminDetails({
@@ -528,7 +545,6 @@ const AdminsPage = () => {
               <label>Email</label>
               <input
                 type="email"
-                name="email"
                 value={adminDetails.email}
                 onChange={(e) =>
                   setAdminDetails({ ...adminDetails, email: e.target.value })
@@ -536,11 +552,9 @@ const AdminsPage = () => {
               />
             </div>
 
-            {/* ROLE — always visible now */}
             <div className="admins-page-form-group">
               <label>Role</label>
               <select
-                name="role"
                 value={adminDetails.role}
                 onChange={(e) =>
                   setAdminDetails({ ...adminDetails, role: e.target.value })
@@ -555,7 +569,6 @@ const AdminsPage = () => {
               <label>Contact Number</label>
               <input
                 type="text"
-                name="contact_number"
                 value={adminDetails.contact_number}
                 onChange={(e) =>
                   setAdminDetails({
@@ -570,7 +583,6 @@ const AdminsPage = () => {
               <label>Address</label>
               <input
                 type="text"
-                name="address"
                 value={adminDetails.address}
                 onChange={(e) =>
                   setAdminDetails({
@@ -581,7 +593,6 @@ const AdminsPage = () => {
               />
             </div>
 
-            {/* IMAGE UPLOAD */}
             <div className="admins-page-form-group">
               <label>Profile Image</label>
               <input

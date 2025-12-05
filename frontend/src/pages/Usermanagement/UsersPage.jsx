@@ -1,6 +1,7 @@
 // frontend component: UsersPage.jsx
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { logAdminAction } from "../../utils/adminLogger";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
@@ -26,134 +27,115 @@ const UsersPage = () => {
   });
 
   const [formError, setFormError] = useState(null);
+
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // NEW: Invite modal state
+  // Invite Modal
   const [showInviteModal, setShowInviteModal] = useState(false);
-  const [inviteForm, setInviteForm] = useState({
-    email: "",
-    firstname: "",
-    lastname: "",
-  });
+  const [inviteForm, setInviteForm] = useState({ email: "" });
   const [inviteError, setInviteError] = useState(null);
   const [inviteLoading, setInviteLoading] = useState(false);
 
-  // NEW: Search & filter state
+  // Search & filter
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  // Always use correct token for admin actions
+  // Get admin token
   const getAdminToken = () =>
-    localStorage.getItem("adminToken") || localStorage.getItem("token") || null;
+    localStorage.getItem("adminToken") ||
+    localStorage.getItem("admin_token") ||
+    localStorage.getItem("token") ||
+    null;
 
-  // =========================================
-  // FETCH USERS (PAGINATED)
-  // =========================================
-const fetchUsers = async (page = 1) => {
-  setLoading(true);
-  setError(null);
+  /* ======================================================
+     FETCH USERS
+  ====================================================== */
+  const fetchUsers = async (page = 1) => {
+    setLoading(true);
+    setError(null);
 
-  const token = getAdminToken();
-  if (!token) {
-    setError("Admin session expired. Please log in again.");
-    setLoading(false);
-    return;
-  }
+    const token = getAdminToken();
+    if (!token) {
+      setError("Admin session expired. Please log in again.");
+      setLoading(false);
+      return;
+    }
 
-  try {
-    const res = await axios.get(
-      `${API_BASE}/api/admin/users/list`, 
-      {
+    try {
+      const res = await axios.get(`${API_BASE}/api/admin/users/list`, {
         params: {
           page,
           limit: 10,
           search: searchTerm,
           status: statusFilter,
         },
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-    const normalized = res.data.users.map((u) => ({
-      ...u,
-      profile_image: u.profile_image?.replace(/\\/g, "/"),
-    }));
+      const normalized = res.data.users.map((u) => ({
+        ...u,
+        profile_image: u.profile_image?.replace(/\\/g, "/"),
+      }));
 
-    setUsers(normalized);
-    setCurrentPage(page);
-    setTotalPages(Math.ceil(res.data.total / res.data.limit));
-  } catch (err) {
-    console.error("FETCH USERS ERROR:", err);
-    setError("Unable to load users. Please log in again.");
-  } finally {
-    setLoading(false);
-  }
-};
+      setUsers(normalized);
+      setCurrentPage(page);
+      setTotalPages(Math.ceil(res.data.total / res.data.limit));
+    } catch (err) {
+      console.error("FETCH USERS ERROR:", err);
+      setError("Unable to load users.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
-// Initial load (page 1)
-useEffect(() => {
-  fetchUsers();
-}, []);
+  useEffect(() => {
+    const delay = setTimeout(() => fetchUsers(1), 300);
+    return () => clearTimeout(delay);
+  }, [searchTerm, statusFilter]);
 
-// Re-fetch when search text OR status filter changes
-useEffect(() => {
-  const delay = setTimeout(() => {
-    fetchUsers(1);
-  }, 300);
-
-  return () => clearTimeout(delay);
-}, [searchTerm, statusFilter]);
-
+  /* ======================================================
+     OPEN USER DETAILS VIEW
+  ====================================================== */
   const openUserDetailsView = (user) => {
     setSelectedUser(user);
     setShowUserDetailsView(true);
     setShowUpdateForm(false);
   };
 
+  /* ======================================================
+     OPEN UPDATE FORM
+  ====================================================== */
   const openUpdateForm = () => {
-    if (selectedUser) {
-      setUserDetails({
-        id: selectedUser.id,
-        username: selectedUser.username,
-        firstname: selectedUser.firstname,
-        lastname: selectedUser.lastname,
-        email: selectedUser.email,
-        contact_number: selectedUser.contact_number || "",
-        address: selectedUser.address || "",
-        profile_image: null,
-        profile_image_preview: selectedUser.profile_image
-          ? `${API_BASE}/${selectedUser.profile_image}`
-          : "",
-      });
-    } else {
-      setUserDetails({
-        id: null,
-        username: "",
-        firstname: "",
-        lastname: "",
-        email: "",
-        contact_number: "",
-        address: "",
-        profile_image: null,
-        profile_image_preview: "",
-      });
-    }
+    setUserDetails({
+      id: selectedUser.id,
+      username: selectedUser.username,
+      firstname: selectedUser.firstname,
+      lastname: selectedUser.lastname,
+      email: selectedUser.email,
+      contact_number: selectedUser.contact_number || "",
+      address: selectedUser.address || "",
+      profile_image: null,
+      profile_image_preview: selectedUser.profile_image
+        ? `${API_BASE}/${selectedUser.profile_image}`
+        : "",
+    });
 
     setShowUpdateForm(true);
     setShowUserDetailsView(false);
     setFormError(null);
   };
 
+  /* ======================================================
+     CHANGE HANDLERS
+  ====================================================== */
   const handleDetailsChange = (e) => {
     const { name, value } = e.target;
-    setUserDetails((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setUserDetails((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleImageChange = (e) => {
@@ -167,6 +149,9 @@ useEffect(() => {
     }));
   };
 
+  /* ======================================================
+     VALIDATION
+  ====================================================== */
   const validateDetails = () => {
     const { username, firstname, lastname, email } = userDetails;
 
@@ -176,16 +161,16 @@ useEffect(() => {
     }
 
     if (!/\S+@\S+\.\S+/.test(email)) {
-      setFormError("Invalid email format.");
+      setFormError("Invalid email.");
       return false;
     }
 
     return true;
   };
 
-  // =========================================
-  // SAVE (CREATE or UPDATE) - manual add / edit
-  // =========================================
+  /* ======================================================
+     UPDATE USER (NO CREATE)
+  ====================================================== */
   const handleSaveUser = async () => {
     if (!validateDetails()) return;
 
@@ -198,12 +183,9 @@ useEffect(() => {
     try {
       const formData = new FormData();
       Object.entries(userDetails).forEach(([key, value]) => {
-        if (key !== "profile_image_preview") {
-          formData.append(key, value ?? "");
-        }
+        if (key !== "profile_image_preview") formData.append(key, value ?? "");
       });
 
-      // Keep existing image if no new upload
       if (!userDetails.profile_image && userDetails.profile_image_preview) {
         formData.append(
           "existing_image",
@@ -211,58 +193,54 @@ useEffect(() => {
         );
       }
 
-      if (userDetails.id) {
-        // UPDATE
-        await axios.put(
-          `${API_BASE}/api/admin/users/user/${userDetails.id}`,
-          formData,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        );
-      } else {
-        // CREATE (manual add)
-        await axios.post(`${API_BASE}/api/admin/users/user`, formData, {
+      await axios.put(
+        `${API_BASE}/api/admin/users/user/${userDetails.id}`,
+        formData,
+        {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "multipart/form-data",
           },
-        });
-      }
+        }
+      );
+
+      // UPDATED LOGGING ✔
+      await logAdminAction("Update User", {
+        userId: userDetails.id,
+        email: userDetails.email,
+      });
 
       setShowUpdateForm(false);
       setSelectedUser(null);
-
-      await fetchUsers(currentPage);
+      fetchUsers(currentPage);
     } catch (err) {
       console.error("SAVE USER ERROR:", err);
-      setFormError(err.response?.data?.message || "Failed to save user.");
+      setFormError("Failed to save user.");
     }
   };
 
-  // =========================================
-  // DELETE USER
-  // =========================================
+  /* ======================================================
+     DELETE USER
+  ====================================================== */
   const handleDeleteUser = async () => {
     if (!selectedUser) return;
+
     if (!window.confirm("Are you sure you want to delete this user?")) return;
 
     const token = getAdminToken();
-    if (!token) {
-      alert("Admin session expired. Please log in again.");
-      return;
-    }
+    if (!token) return alert("Session expired. Log in again.");
 
     try {
       await axios.delete(
         `${API_BASE}/api/admin/users/user/${selectedUser.id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
+
+      // UPDATED LOGGING ✔
+      await logAdminAction("Delete User", {
+        userId: selectedUser.id,
+        email: selectedUser.email,
+      });
 
       setShowUserDetailsView(false);
       setSelectedUser(null);
@@ -273,6 +251,9 @@ useEffect(() => {
     }
   };
 
+  /* ======================================================
+     CLOSE MODALS
+  ====================================================== */
   const closeForms = () => {
     setShowUserDetailsView(false);
     setShowUpdateForm(false);
@@ -280,9 +261,9 @@ useEffect(() => {
     setFormError(null);
   };
 
-  // =========================================
-  // INVITE USER FLOW
-  // =========================================
+  /* ======================================================
+     INVITE USER
+  ====================================================== */
   const sendInvite = async () => {
     setInviteError(null);
 
@@ -292,59 +273,55 @@ useEffect(() => {
     }
 
     const token = getAdminToken();
-    if (!token) {
-      setInviteError("Admin session expired. Please log in again.");
-      return;
-    }
+    if (!token) return setInviteError("Session expired.");
 
     setInviteLoading(true);
+
     try {
-await axios.post(
-  `${API_BASE}/api/admin/users/invite`,
-  { email: inviteForm.email },
-  {
-    headers: { Authorization: `Bearer ${token}` },
-  }
-);
+      await axios.post(
+        `${API_BASE}/api/admin/users/invite`,
+        { email: inviteForm.email },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
+      // UPDATED LOGGING ✔
+      await logAdminAction("Invite User", { email: inviteForm.email });
 
-      alert("Invitation sent! The user will receive an email with a link and QR code.");
+      alert("Invitation sent!");
       setShowInviteModal(false);
-      setInviteForm({ email: ""});
+      setInviteForm({ email: "" });
 
-      // Refresh list to show new pending user
       fetchUsers(currentPage);
     } catch (err) {
       console.error("INVITE USER ERROR:", err);
-      setInviteError(err.response?.data?.message || "Failed to send invitation.");
+      setInviteError("Failed to send invitation.");
     } finally {
       setInviteLoading(false);
     }
   };
 
-  // =========================================
-  // FILTERED USERS (client-side search & filter)
-  // =========================================
+  /* ======================================================
+     FILTER USERS
+  ====================================================== */
   const filteredUsers = users.filter((u) => {
     const term = searchTerm.toLowerCase().trim();
 
-    const matchesSearch =
-      term === "" ||
-      (u.username && u.username.toLowerCase().includes(term)) ||
-      (u.firstname && u.firstname.toLowerCase().includes(term)) ||
-      (u.lastname && u.lastname.toLowerCase().includes(term)) ||
-      (u.email && u.email.toLowerCase().includes(term));
+    const matchText =
+      u.username?.toLowerCase().includes(term) ||
+      u.firstname?.toLowerCase().includes(term) ||
+      u.lastname?.toLowerCase().includes(term) ||
+      u.email?.toLowerCase().includes(term);
 
-    const matchesStatus =
+    const matchStatus =
       statusFilter === "all" ||
-      (u.status && u.status.toLowerCase() === statusFilter.toLowerCase());
+      u.status?.toLowerCase() === statusFilter.toLowerCase();
 
-    return matchesSearch && matchesStatus;
+    return (!term || matchText) && matchStatus;
   });
 
-  // ======================================================
-  // RENDER
-  // ======================================================
+  /* ======================================================
+     RENDER
+  ====================================================== */
   return (
     <div className="users-page-container">
       <h2 className="users-page-title">Users Management</h2>
@@ -352,14 +329,14 @@ await axios.post(
       {loading && <p>Loading users...</p>}
       {error && <p className="users-page-error">{error}</p>}
 
-      {/* MAIN LIST VIEW */}
+      {/* MAIN PAGE */}
       {!loading && !showUserDetailsView && !showUpdateForm && (
         <>
           <div className="users-page-topbar">
             <button
               className="users-page-add-btn"
               onClick={() => {
-                setInviteForm({ email: ""});
+                setInviteForm({ email: "" });
                 setInviteError(null);
                 setShowInviteModal(true);
               }}
@@ -371,16 +348,17 @@ await axios.post(
               <input
                 type="text"
                 className="users-page-search"
-                placeholder="Search by username, name, or email..."
+                placeholder="Search by username, name or email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
+
               <select
                 className="users-page-filter-select"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
-                <option value="all">All Status</option>
+                <option value="all">All</option>
                 <option value="pending">Pending</option>
                 <option value="active">Active</option>
                 <option value="disabled">Disabled</option>
@@ -388,6 +366,7 @@ await axios.post(
             </div>
           </div>
 
+          {/* USERS TABLE */}
           <table className="users-page-table">
             <thead>
               <tr>
@@ -400,11 +379,12 @@ await axios.post(
                 <th>Status</th>
               </tr>
             </thead>
+
             <tbody>
               {filteredUsers.length === 0 ? (
                 <tr>
                   <td colSpan="7" style={{ textAlign: "center" }}>
-                    No users found.
+                    No results found.
                   </td>
                 </tr>
               ) : (
@@ -422,9 +402,7 @@ await axios.post(
                     <td>{u.address || "N/A"}</td>
                     <td>
                       <span
-                        className={`users-page-status-badge ${
-                          (u.status || "").toLowerCase()
-                        }`}
+                        className={`users-page-status-badge ${u.status?.toLowerCase()}`}
                       >
                         {u.status || "N/A"}
                       </span>
@@ -435,7 +413,7 @@ await axios.post(
             </tbody>
           </table>
 
-          {/* PAGINATION (server-side, current page only filtered on client) */}
+          {/* PAGINATION */}
           <div className="users-page-pagination">
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
               <button
@@ -456,7 +434,7 @@ await axios.post(
           <div className="users-page-modal">
             <h3>User Details</h3>
 
-            <div style={{ display: "flex", gap: 24 }}>
+            <div style={{ display: "flex", gap: 20 }}>
               <div style={{ flex: 1 }}>
                 <p><strong>Username:</strong> {selectedUser.username}</p>
                 <p><strong>First:</strong> {selectedUser.firstname}</p>
@@ -476,8 +454,8 @@ await axios.post(
               <div className="users-page-image-box">
                 {selectedUser.profile_image ? (
                   <img
-                    className="users-page-profile-img"
                     src={`${API_BASE}/${selectedUser.profile_image}`}
+                    className="users-page-profile-img"
                     alt="Profile"
                   />
                 ) : (
@@ -489,11 +467,11 @@ await axios.post(
         </div>
       )}
 
-      {/* ADD / EDIT USER MODAL (manual) */}
+      {/* UPDATE USER MODAL */}
       {showUpdateForm && (
         <div className="users-page-modal-overlay">
           <div className="users-page-modal">
-            <h3>{userDetails.id ? "Edit User" : "Add User"}</h3>
+            <h3>Edit User</h3>
 
             {formError && <p className="users-page-error">{formError}</p>}
 
@@ -512,7 +490,6 @@ await axios.post(
                     name="username"
                     value={userDetails.username}
                     onChange={handleDetailsChange}
-                    required
                   />
                 </div>
 
@@ -523,7 +500,6 @@ await axios.post(
                     name="firstname"
                     value={userDetails.firstname}
                     onChange={handleDetailsChange}
-                    required
                   />
                 </div>
 
@@ -534,7 +510,6 @@ await axios.post(
                     name="lastname"
                     value={userDetails.lastname}
                     onChange={handleDetailsChange}
-                    required
                   />
                 </div>
 
@@ -545,7 +520,6 @@ await axios.post(
                     name="email"
                     value={userDetails.email}
                     onChange={handleDetailsChange}
-                    required
                   />
                 </div>
 
@@ -575,14 +549,8 @@ await axios.post(
                 </div>
 
                 <div className="users-page-btn-group">
-                  <button type="submit">
-                    {userDetails.id ? "Update" : "Add"}
-                  </button>
-                  <button
-                    type="button"
-                    className="cancel"
-                    onClick={closeForms}
-                  >
+                  <button type="submit">Update</button>
+                  <button type="button" className="cancel" onClick={closeForms}>
                     Cancel
                   </button>
                 </div>
@@ -612,37 +580,30 @@ await axios.post(
 
             {inviteError && <p className="users-page-error">{inviteError}</p>}
 
-            <div className="users-page-form">
-              <div className="users-page-form-group">
-                <label>Email:</label>
-                <input
-                  type="email"
-                  value={inviteForm.email}
-                  onChange={(e) =>
-                    setInviteForm((prev) => ({ ...prev, email: e.target.value }))
-                  }
-                  required
-                />
-              </div>
+            <div className="users-page-form-group">
+              <label>Email:</label>
+              <input
+                type="email"
+                value={inviteForm.email}
+                onChange={(e) =>
+                  setInviteForm((prev) => ({ ...prev, email: e.target.value }))
+                }
+                required
+              />
+            </div>
 
+            <div className="users-page-btn-group">
+              <button onClick={sendInvite} disabled={inviteLoading}>
+                {inviteLoading ? "Sending..." : "Send Invite"}
+              </button>
 
-              <div className="users-page-btn-group">
-                <button onClick={sendInvite} disabled={inviteLoading}>
-                  {inviteLoading ? "Sending..." : "Send Invite"}
-                </button>
-                <button
-                  className="cancel"
-                  onClick={() => setShowInviteModal(false)}
-                  type="button"
-                >
-                  Cancel
-                </button>
-              </div>
+              <button className="cancel" onClick={() => setShowInviteModal(false)}>
+                Cancel
+              </button>
             </div>
 
             <p style={{ fontSize: 12, color: "#6b7280", marginTop: 12 }}>
-              The invited user will receive an email with a verification link and a QR code
-              they can scan to open the verification page.
+              The invited user will receive an email with a verification link.
             </p>
           </div>
         </div>

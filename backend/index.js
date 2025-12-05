@@ -5,9 +5,9 @@ const dotenv = require("dotenv");
 const path = require("path");
 const fs = require("fs");
 
-// ---------------------------------------------
-// LOAD ENV (Local Only)
-// ---------------------------------------------
+/* ---------------------------------------------
+   LOAD ENV (Local Only)
+--------------------------------------------- */
 if (!process.env.RAILWAY_ENVIRONMENT) {
   dotenv.config({ path: path.join(__dirname, ".env") });
   console.log("ℹ️ ENV loaded (LOCAL mode)");
@@ -15,16 +15,16 @@ if (!process.env.RAILWAY_ENVIRONMENT) {
   console.log("ℹ️ Railway environment detected — .env ignored");
 }
 
-// ---------------------------------------------
-// INIT EXPRESS
-// ---------------------------------------------
+/* ---------------------------------------------
+   INIT EXPRESS
+--------------------------------------------- */
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ---------------------------------------------
-// CORS CONFIG 
-// ---------------------------------------------
+/* ---------------------------------------------
+   CORS CONFIG
+--------------------------------------------- */
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
@@ -45,17 +45,17 @@ app.use(
   })
 );
 
-// ---------------------------------------------
-// REQUEST LOGGER
-// ---------------------------------------------
+/* ---------------------------------------------
+   REQUEST LOGGER
+--------------------------------------------- */
 app.use((req, res, next) => {
   console.log(`[${req.method}] ${req.originalUrl}`);
   next();
 });
 
-// ---------------------------------------------
-// DATABASE INIT
-// ---------------------------------------------
+/* ---------------------------------------------
+   DATABASE INIT
+--------------------------------------------- */
 const { getPool } = require("./config/db");
 
 async function initDatabase() {
@@ -68,21 +68,15 @@ async function initDatabase() {
   }
 }
 
-// ---------------------------------------------
-// STATIC UPLOADS
-// ---------------------------------------------
+/* ---------------------------------------------
+   STATIC UPLOADS
+--------------------------------------------- */
 const uploadPaths = [
   path.join(__dirname, "uploads"),
   path.join(process.cwd(), "uploads"),
 ];
 
-let uploadsFolder = uploadPaths.find((dir) => {
-  try {
-    return fs.existsSync(dir);
-  } catch {
-    return false;
-  }
-});
+let uploadsFolder = uploadPaths.find((dir) => fs.existsSync(dir));
 
 if (!uploadsFolder) {
   uploadsFolder = uploadPaths[0];
@@ -100,9 +94,9 @@ app.use(
   })
 );
 
-// ---------------------------------------------
-// SERVICE LOADER FUNCTION
-// ---------------------------------------------
+/* ---------------------------------------------
+   SERVICE LOADER FUNCTION
+--------------------------------------------- */
 function loadService(name, mountPath, loaderFn) {
   try {
     const routes = loaderFn();
@@ -113,16 +107,16 @@ function loadService(name, mountPath, loaderFn) {
   }
 }
 
-// ---------------------------------------------
-// LOAD PUBLIC INVITE ROUTES (NO AUTH)
-// ---------------------------------------------
+/* ---------------------------------------------
+   PUBLIC ROUTES
+--------------------------------------------- */
 loadService("Public Invite Service", "/api/invite", () =>
   require("./public/publicInviteRoutes")
 );
 
-// ---------------------------------------------
-// LOAD ADMIN SERVICES (Protected)
-// ---------------------------------------------
+/* ---------------------------------------------
+   ADMIN SERVICES
+--------------------------------------------- */
 loadService("Admin Service", "/api/admin", () =>
   require("./admin-service/routes/adminRoutes")
 );
@@ -131,9 +125,9 @@ loadService("Admin User Service", "/api/admin/users", () =>
   require("./admin-service/routes/userRoutes")
 );
 
-// ---------------------------------------------
-// CMS SERVICES
-// ---------------------------------------------
+/* ---------------------------------------------
+   CMS SERVICES
+--------------------------------------------- */
 loadService("CMS Experience", "/api/cms/experience", () =>
   require("./cms-service/routes/experience")
 );
@@ -154,30 +148,27 @@ loadService("CMS Navbar", "/api/cms/navbar", () =>
   require("./cms-service/routes/navbar")
 );
 
-// ---------------------------------------------
-// DESTINATIONS SERVICE
-// ---------------------------------------------
+/* ---------------------------------------------
+   DESTINATIONS + MAP
+--------------------------------------------- */
 loadService("Destinations Service", "/api/destinations", () =>
   require("./destination-service/routes/destinations")
 );
 
-// ---------------------------------------------
-// MAP SERVICE
-// ---------------------------------------------
 loadService("Map Service", "/map/touristspots", () =>
   require("./map-service/routes/touristSpots")
 );
 
-// ---------------------------------------------
-// SEARCH SERVICE
-// ---------------------------------------------
+/* ---------------------------------------------
+   SEARCH SERVICE
+--------------------------------------------- */
 loadService("Search Service", "/api/search", () =>
   require("./searchFiltering-service/routes/search")
 );
 
-// ---------------------------------------------
-// AUTH & WISHLIST
-// ---------------------------------------------
+/* ---------------------------------------------
+   AUTH & WISHLIST
+--------------------------------------------- */
 loadService("Auth Service", "/api/user", () =>
   require("./user-service/routes/auth")
 );
@@ -186,22 +177,31 @@ loadService("Wishlist Service", "/api/user/wishlist", () =>
   require("./user-service/routes/wishlist")
 );
 
-// ---------------------------------------------
-// HEALTH CHECK
-// ---------------------------------------------
+/* ---------------------------------------------
+   VISITOR TRACKING + ADMIN LOG ROUTES (NEW)
+--------------------------------------------- */
+app.use("/api/visitors", require("./routes/visitors"));
+app.use("/api/adminlogs", require("./routes/adminLogs"));
+
+
+console.log("🆕 Visitors + AdminLogs routes registered");
+
+/* ---------------------------------------------
+   HEALTH CHECK
+--------------------------------------------- */
 app.get("/api/health", async (req, res) => {
   try {
     const pool = await getPool();
     await pool.query("SELECT 1");
     res.json({ status: "ok", db: "connected" });
-  } catch (err) {
+  } catch {
     res.status(500).json({ status: "error", db: "failed" });
   }
 });
 
-// ---------------------------------------------
-// ROOT API
-// ---------------------------------------------
+/* ---------------------------------------------
+   ROOT API
+--------------------------------------------- */
 app.get("/", (req, res) => {
   res.json({
     message: "🚀 Discover Mansalay Backend Running",
@@ -209,9 +209,9 @@ app.get("/", (req, res) => {
   });
 });
 
-// ---------------------------------------------
-// 404 HANDLER
-// ---------------------------------------------
+/* ---------------------------------------------
+   404 HANDLER
+--------------------------------------------- */
 app.use((req, res) => {
   res.status(404).json({
     ok: false,
@@ -220,9 +220,9 @@ app.use((req, res) => {
   });
 });
 
-// ---------------------------------------------
-// GLOBAL ERROR HANDLER
-// ---------------------------------------------
+/* ---------------------------------------------
+   GLOBAL ERROR HANDLER
+--------------------------------------------- */
 app.use((err, req, res, next) => {
   console.error("🔥 SERVER ERROR:", err);
   res.status(500).json({
@@ -232,16 +232,15 @@ app.use((err, req, res, next) => {
   });
 });
 
-// ---------------------------------------------
-// START SERVER
-// ---------------------------------------------
+/* ---------------------------------------------
+   START SERVER
+--------------------------------------------- */
 async function startServer() {
   await initDatabase();
-
   const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => {
-    console.log(`🌐 Server running on port ${PORT}`);
-  });
+  app.listen(PORT, () =>
+    console.log(`🌐 Server running on port ${PORT}`)
+  );
 }
 
 startServer();
