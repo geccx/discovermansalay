@@ -2,7 +2,7 @@ const express = require("express");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const rateLimit = require("express-rate-limit");
-const { Resend } = require("resend");
+const nodemailer = require("nodemailer");
 const { getPool } = require("../../config/db");
 const { authRequired } = require("../middleware/authMiddleware");
 
@@ -14,8 +14,17 @@ const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_key";
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM_EMAIL = process.env.RESEND_FROM;
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST, // smtp-relay.brevo.com
+  port: Number(process.env.SMTP_PORT) || 587,
+  secure: false,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
+
+const FROM_EMAIL = process.env.SMTP_FROM;
 
 /* ---------------------------------------------
    RATE LIMITER
@@ -51,13 +60,13 @@ function isStrongPassword(pwd) {
 
 async function sendEmail(to, subject, html) {
   try {
-    await resend.emails.send({
+    await transporter.sendMail({
       from: FROM_EMAIL,
       to,
       subject,
       html,
     });
-    console.log("📩 Email sent to:", to);
+    console.log("📩 Email sent:", to);
   } catch (err) {
     console.error("❌ Email failed:", err.message);
   }
@@ -123,9 +132,7 @@ router.post("/verify-otp", async (req, res) => {
   const { emailOrUsername, otp } = req.body;
 
   if (!emailOrUsername || !otp)
-    return res
-      .status(400)
-      .json({ message: "Email/Username and OTP are required." });
+    return res.status(400).json({ message: "Email/Username and OTP are required." });
 
   try {
     const pool = await getPool();
@@ -167,9 +174,7 @@ router.post("/login", async (req, res) => {
   const { identifier, password } = req.body;
 
   if (!identifier || !password)
-    return res
-      .status(400)
-      .json({ message: "Email/Username and password required." });
+    return res.status(400).json({ message: "Email/Username and password required." });
 
   try {
     const pool = await getPool();
@@ -193,7 +198,7 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Incorrect password." });
 
     /* -----------------------------------------
-       ADMIN / SUPERADMIN: OTP REQUIRED
+       ADMIN / SUPERADMIN OTP
     ----------------------------------------- */
     if (user.role === "admin" || user.role === "superadmin") {
       const otp = generateOtp();
