@@ -167,6 +167,7 @@ async function ensureUserAndWishlistTables(pool) {
   `);
 
   console.log("🧩 User + Wishlist tables ensured");
+
   // ---------- AUTO-MIGRATION: Check missing verification_method ----------
   const [userCols] = await pool.query(`SHOW COLUMNS FROM users`);
   const hasVerificationMethod = userCols.some(c => c.Field === "verification_method");
@@ -191,6 +192,7 @@ async function ensureUserAndWishlistTables(pool) {
     console.log("🛠️ Added missing image_path to wishlist");
   }
 
+}
 
 /* ---------------------------------------------
    UNIFIED CONTENT TABLE
