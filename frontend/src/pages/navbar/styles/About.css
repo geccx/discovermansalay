@@ -1,0 +1,148 @@
+/* ================================
+   HERO SECTION
+================================ */
+.about-hero {
+  width: 100%;
+  height: 55vh;
+  background: url("/images/mangyan1.jpg") center/cover no-repeat;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.about-hero-overlay {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.6));
+}
+
+.about-hero-content {
+  position: relative;
+  text-align: center;
+  color: #fff;
+  z-index: 2;
+}
+
+.about-hero-content h1 {
+  font-size: 3.2rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+.about-hero-content p {
+  margin-top: 10px;
+  font-size: 1.25rem;
+  opacity: 0.9;
+}
+
+/* ================================
+   SECTION TITLE
+================================ */
+.section-title {
+  text-align: center;
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin-bottom: 30px;
+  color: #033859;
+}
+
+/* ================================
+   ABOUT INFO CARDS
+================================ */
+.about-section {
+  padding: 60px 10%;
+}
+
+.about-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 25px;
+}
+
+.about-card {
+  background: #ffffff;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.about-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+.about-card h3 {
+  margin-bottom: 12px;
+  color: #F25749;
+  font-size: 1.4rem;
+}
+
+/* ================================
+   GALLERY SECTION
+================================ */
+.gallery-section {
+  padding: 60px 10%;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+.gallery-item {
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.gallery-item img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.gallery-caption {
+  text-align: center;
+  padding: 12px;
+  color: #033859;
+  font-weight: 600;
+}
+
+/* ================================
+   MESSAGE SECTION
+================================ */
+.about-message {
+  padding: 60px 8%;
+  text-align: center;
+  background: #f7f9fb;
+  border-top: 3px solid #03385910;
+}
+
+.about-message p {
+  max-width: 850px;
+  margin: auto;
+  font-size: 1.2rem;
+  color: #033859;
+  line-height: 1.7;
+}
+
+/* ================================
+   ANIMATIONS
+================================ */
+.fade-in {
+  opacity: 0;
+  transform: translateY(25px);
+  animation: fadeInUp 0.8s forwards ease-out;
+}
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
