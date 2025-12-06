@@ -152,6 +152,7 @@ async function ensureUserAndWishlistTables(pool) {
     )
   `);
 
+  // Wishlist base table
   await pool.query(`
     CREATE TABLE IF NOT EXISTS wishlist (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -166,7 +167,20 @@ async function ensureUserAndWishlistTables(pool) {
   `);
 
   console.log("🧩 User + Wishlist tables ensured");
+
+  // ---------- AUTO-MIGRATION: Check if image_path exists ----------
+  const [wishCols] = await pool.query(`SHOW COLUMNS FROM wishlist`);
+  const hasImagePath = wishCols.some((c) => c.Field === "image_path");
+
+  if (!hasImagePath) {
+    await pool.query(`
+      ALTER TABLE wishlist 
+      ADD COLUMN image_path VARCHAR(500) NULL AFTER category
+    `);
+    console.log("🛠️ Added missing image_path to wishlist");
+  }
 }
+
 
 /* ---------------------------------------------
    UNIFIED CONTENT TABLE
@@ -200,9 +214,12 @@ async function ensureUnifiedContentTable(pool) {
 }
 
 /* ---------------------------------------------
-   ACCOMMODATION BOOKINGS TABLE
+   ACCOMMODATION BOOKINGS TABLE (AUTO-MIGRATED)
 --------------------------------------------- */
 async function ensureAccommodationBookingTable(pool) {
+  console.log("🔍 Checking accommodation_bookings table...");
+
+  // 1. Create table if it doesn't exist
   await pool.query(`
     CREATE TABLE IF NOT EXISTS accommodation_bookings (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -212,8 +229,6 @@ async function ensureAccommodationBookingTable(pool) {
       user_contact VARCHAR(50),
       check_in DATE,
       check_out DATE,
-      check_in_time VARCHAR(8),
-      check_out_time VARCHAR(8),
       guests INT,
       status ENUM('pending','awaiting_management','confirmed','cancelled') DEFAULT 'pending',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -221,22 +236,48 @@ async function ensureAccommodationBookingTable(pool) {
     )
   `);
 
-  console.log("🏨 Accommodation bookings table ensured");
+  console.log("📦 accommodation_bookings table ensured");
 
-  // Ensure ENUM contains all statuses (for existing DBs)
-  try {
+  /* ---------------------------------------------------
+     2. AUTO-ADD missing columns (check_in/out_time)
+  ---------------------------------------------------- */
+
+  const [columns] = await pool.query(`
+    SHOW COLUMNS FROM accommodation_bookings
+  `);
+
+  const hasCheckInTime = columns.some((c) => c.Field === "check_in_time");
+  const hasCheckOutTime = columns.some((c) => c.Field === "check_out_time");
+
+  if (!hasCheckInTime) {
     await pool.query(`
       ALTER TABLE accommodation_bookings
-      MODIFY COLUMN status 
-      ENUM('pending','awaiting_management','confirmed','cancelled')
-      DEFAULT 'pending';
+      ADD COLUMN check_in_time VARCHAR(8) NULL AFTER check_out
     `);
-    console.log("🔧 Booking status ENUM updated");
-  } catch (err) {
-    // Ignore if ENUM already patched
-    console.log("ℹ️ Booking status ENUM already up to date");
+    console.log("🛠️ Added check_in_time column");
   }
+
+  if (!hasCheckOutTime) {
+    await pool.query(`
+      ALTER TABLE accommodation_bookings
+      ADD COLUMN check_out_time VARCHAR(8) NULL AFTER check_in_time
+    `);
+    console.log("🛠️ Added check_out_time column");
+  }
+
+  /* ---------------------------------------------------
+     3. Ensure ENUM is correct (auto-patch)
+  ---------------------------------------------------- */
+  await pool.query(`
+    ALTER TABLE accommodation_bookings
+    MODIFY COLUMN status ENUM('pending','awaiting_management','confirmed','cancelled') DEFAULT 'pending'
+  `);
+
+  console.log("🔧 Booking status ENUM updated");
+
+  console.log("✅ accommodation_bookings migration complete");
 }
+
 
 /* ---------------------------------------------
    VISITORS + ADMIN LOGS tables
