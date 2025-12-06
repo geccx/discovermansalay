@@ -9,7 +9,9 @@ import L from "leaflet";
 
 import "../../styles/TouristSpots.css";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
+const API_BASE = import.meta.env.VITE_API_BASE_URL
+  ? import.meta.env.VITE_API_BASE_URL.replace(/\/$/, "")
+  : "";
 
 /* ---------------------------------------------
    DEFAULT MARKER (fallback)
@@ -35,20 +37,22 @@ const LocationSelectorMap = ({ lat, lng, setLat, setLng, previewUrl }) => {
     return null;
   };
 
-  // Dynamic marker image
- const dynamicMarker = previewUrl
-  ? new L.DivIcon({
-      html: `
-        <div class="spot-circle-marker">
-          <img src="${previewUrl}" />
-        </div>
-      `,
-      className: "",
-      iconSize: [60, 60],
-      iconAnchor: [30, 60],
-    })
-  : defaultMarkerIcon;
-
+  // Circular image marker for preview
+  const dynamicMarker = previewUrl
+    ? new L.DivIcon({
+        html: `
+          <div class="spot-circle-wrapper small">
+            <div class="spot-circle-shadow"></div>
+            <div class="spot-circle">
+              <img src="${previewUrl}" />
+            </div>
+          </div>
+        `,
+        className: "",
+        iconSize: [50, 50],
+        iconAnchor: [25, 50],
+      })
+    : defaultMarkerIcon;
 
   return (
     <MapContainer
@@ -82,16 +86,13 @@ const LocationSelectorMap = ({ lat, lng, setLat, setLng, previewUrl }) => {
    ADD / EDIT FORM (MODAL)
 --------------------------------------------- */
 const TouristSpotForm = ({ onSubmit, onCancel, initialData = {}, saving }) => {
-
-const buildPreviewUrl = (url) => {
-  if (!url) return null;
-
-  const cleanBase = API_BASE.replace(/\/$/, "");
-  const cleanPath = url.replace(/^\//, "");
-
-  return `${cleanBase}/${cleanPath}`;
-};
-
+  // Ensure correct preview URL from image_url (e.g. "/uploads/touristspotsmap/xxx.jpg")
+  const buildPreviewUrl = (url) => {
+    if (!url) return null;
+    const cleanBase = API_BASE || "";
+    const cleanPath = url.replace(/^\//, "");
+    return `${cleanBase}/${cleanPath}`;
+  };
 
   const [name, setName] = useState(initialData.name || "");
   const [lat, setLat] = useState(initialData.lat ?? "");
@@ -99,12 +100,16 @@ const buildPreviewUrl = (url) => {
   const [category, setCategory] = useState(initialData.category || "");
 
   const [image, setImage] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState(buildPreviewUrl(initialData.image_url));
+  const [previewUrl, setPreviewUrl] = useState(
+    buildPreviewUrl(initialData.image_url)
+  );
 
   const handleImage = (e) => {
     const file = e.target.files[0];
     setImage(file);
-    if (file) setPreviewUrl(URL.createObjectURL(file));
+    if (file) {
+      setPreviewUrl(URL.createObjectURL(file));
+    }
   };
 
   const submit = async (e) => {
@@ -140,14 +145,18 @@ const buildPreviewUrl = (url) => {
               lng={lng}
               setLat={setLat}
               setLng={setLng}
-              previewUrl={previewUrl}  // <-- FIXED
+              previewUrl={previewUrl}
             />
           </div>
 
           <div className="image-panel">
             <div className="image-preview-box">
               {previewUrl ? (
-                <img src={previewUrl} className="image-preview-large" alt="preview" />
+                <img
+                  src={previewUrl}
+                  className="image-preview-large"
+                  alt="preview"
+                />
               ) : (
                 <div className="image-preview-placeholder">
                   <span>No image selected</span>
@@ -157,7 +166,12 @@ const buildPreviewUrl = (url) => {
 
             <label className="image-upload-btn">
               Choose Image
-              <input type="file" accept="image/*" onChange={handleImage} hidden />
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImage}
+                hidden
+              />
             </label>
           </div>
         </div>
@@ -210,11 +224,19 @@ const buildPreviewUrl = (url) => {
           </div>
 
           <div className="touristspot-form-actions">
-            <button type="submit" className="touristspot-submit-btn" disabled={saving}>
+            <button
+              type="submit"
+              className="touristspot-submit-btn"
+              disabled={saving}
+            >
               {saving ? "Saving..." : "Save"}
             </button>
 
-            <button type="button" className="touristspot-cancel-btn" onClick={onCancel}>
+            <button
+              type="button"
+              className="touristspot-cancel-btn"
+              onClick={onCancel}
+            >
               Cancel
             </button>
           </div>
@@ -251,15 +273,15 @@ const TouristSpots = () => {
     fetchSpots();
   }, []);
 
-const getSpotImageUrl = (spot) => {
-  if (!spot.image_url) return "/images/fallback.jpg";
+  // Build frontend image URL same way as MapPage
+  const getSpotImageUrl = (spot) => {
+    if (!spot.image_url) return "/images/fallback.jpg";
 
-  const cleanBase = API_BASE.replace(/\/$/, "");
-  const cleanPath = spot.image_url.replace(/^\//, "");
+    const cleanBase = API_BASE || "";
+    const cleanPath = spot.image_url.replace(/^\//, "");
 
-  return `${cleanBase}/${cleanPath}?t=${Date.now()}`;
-};
-
+    return `${cleanBase}/${cleanPath}?t=${Date.now()}`;
+  };
 
   const handleAdd = async (formData) => {
     setSaving(true);
@@ -309,7 +331,10 @@ const getSpotImageUrl = (spot) => {
 
   return (
     <div className="experiencecms-container">
-      <button className="touristspot-add-btn" onClick={() => setAdding(true)}>
+      <button
+        className="touristspot-add-btn"
+        onClick={() => setAdding(true)}
+      >
         + Add New Spot
       </button>
 
@@ -343,9 +368,15 @@ const getSpotImageUrl = (spot) => {
               />
 
               <h3>{spot.name}</h3>
-              <p><strong>Category:</strong> {spot.category}</p>
-              <p><strong>Lat:</strong> {spot.lat}</p>
-              <p><strong>Lng:</strong> {spot.lng}</p>
+              <p>
+                <strong>Category:</strong> {spot.category}
+              </p>
+              <p>
+                <strong>Lat:</strong> {spot.lat}
+              </p>
+              <p>
+                <strong>Lng:</strong> {spot.lng}
+              </p>
 
               <button onClick={() => setEditingSpot(spot)}>Edit</button>
               <button onClick={() => handleDelete(spot.id)}>Delete</button>
