@@ -4,7 +4,9 @@ import { useNavigate, useLocation } from "react-router-dom";
 import SearchResultCard from "../components/SearchResultCard";
 import "../styles/SearchPage.css";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+// 🔒 Locked to production API
+const API_BASE = "https://discovermansalaybackend.up.railway.app";
+
 const PAGE_CHUNK = 12; // how many items per "page"
 
 const SearchPage = () => {
