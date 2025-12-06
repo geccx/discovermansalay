@@ -6,7 +6,7 @@
   gap: 22px;
 }
 
-/* SUMMARY CARD GRID */
+/* GRID FOR SUMMARY CARDS */
 .overview-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
@@ -49,7 +49,7 @@
 .yellow { border-left-color: #facc15; }
 .teal { border-left-color: #14b8a6; }
 
-/* CHART CARD */
+/* MAIN CHART CONTAINER */
 .overview-chart-card {
   background: white;
   padding: 18px 20px;
@@ -63,7 +63,7 @@
   font-weight: 600;
 }
 
-/* CHART GRID */
+/* CHART GRID FOR EXTRA ANALYTICS */
 .overview-charts-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
@@ -74,12 +74,12 @@
   grid-column: 1 / -1;
 }
 
-/* TOOLTIP */
+/* TOOLTIP STYLING */
 .recharts-tooltip-wrapper {
   font-size: 0.8rem !important;
 }
 
-/* TABLE WRAPPER (future proof) */
+/* TABLE SECTION — if you add later */
 .dashboard-table-section {
   background: white;
   border-radius: 12px;
@@ -87,18 +87,14 @@
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
 }
 
-/* ==========================================================
-   RESPONSIVE BREAKPOINTS
-   ========================================================== */
-
-/* ---------- TABLET & SMALL LAPTOPS ---------- */
+/* RESPONSIVE */
 @media (max-width: 900px) {
   .overview-charts-grid {
     grid-template-columns: 1fr;
   }
 
   .overview-grid {
-    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   }
 
   .overview-card p {
@@ -106,51 +102,20 @@
   }
 }
 
-/* ---------- MOBILE (600px) ---------- */
 @media (max-width: 600px) {
   .dashboard-overview {
     padding: 12px;
-    gap: 18px;
   }
 
   .overview-card {
     padding: 14px;
-  }
-
-  .overview-card h3 {
-    font-size: 0.85rem;
   }
 
   .overview-card p {
     font-size: 1.4rem;
   }
 
-  .overview-charts-grid {
-    gap: 14px;
-  }
-
   .overview-chart-card {
     padding: 14px;
-  }
-}
-
-/* ---------- SMALL PHONES (480px) ---------- */
-@media (max-width: 480px) {
-  .overview-grid {
-    grid-template-columns: 1fr;
-    gap: 14px;
-  }
-
-  .overview-card {
-    padding: 12px 14px;
-  }
-
-  /* Prevent Recharts overflow on tiny screens */
-  .overview-chart-card {
-    overflow-x: auto;
-  }
-
-  .overview-chart-card::-webkit-scrollbar {
-    height: 6px;
   }
 }
