@@ -1,306 +1,511 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from "react";
 import {
-  MapContainer, TileLayer, Marker, Popup, ZoomControl, useMap,
-} from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
-import 'leaflet-routing-machine/dist/leaflet-routing-machine.js';
-import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
+  MapContainer,
+  TileLayer,
+  Marker,
+  ZoomControl,
+  useMap,
+} from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+import "leaflet-routing-machine";
+import "leaflet-routing-machine/dist/leaflet-routing-machine.css";
 
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
-import myLocationIcon from '../assets/icons/location.jpg';
-import '../styles/pages.css';
+import myLocationIcon from "../assets/icons/location.jpg";
+import "../styles/map.css";
 
-// Fix marker icons
+/* ----------------------------------------------------------
+   FIX DEFAULT MARKERS
+---------------------------------------------------------- */
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+  iconRetinaUrl:
+    "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png",
+  iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
 });
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL
-  ? import.meta.env.VITE_API_BASE_URL.replace(/\/$/, '')
-  : '';
+const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") || "";
 
+/* ----------------------------------------------------------
+   HELPERS
+---------------------------------------------------------- */
+const haversineDistanceKm = (lat1, lon1, lat2, lon2) => {
+  const R = 6371; // km
+  const toRad = (v) => (v * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
+/* ----------------------------------------------------------
+   FLY TO USER COMPONENT
+---------------------------------------------------------- */
 const FlyToUser = ({ location, trigger, setTrigger }) => {
   const map = useMap();
-
   useEffect(() => {
     if (location && trigger) {
-      map.flyTo(location, 15, { animate: true, duration: 1 });
+      map.flyTo(location, 15, { duration: 1.0 });
       setTrigger(false);
     }
   }, [location, trigger, map, setTrigger]);
-
   return null;
 };
 
-// Routing component
-const Routing = ({ origin, destination }) => {
+/* ----------------------------------------------------------
+   FOLLOW USER COMPONENT
+---------------------------------------------------------- */
+const FollowUser = ({ location, follow }) => {
   const map = useMap();
+  useEffect(() => {
+    if (follow && location) {
+      map.flyTo(location, map.getZoom(), { duration: 0.5 });
+    }
+  }, [location, follow, map]);
+  return null;
+};
+
+/* ----------------------------------------------------------
+   FLY TO SELECTED SPOT
+---------------------------------------------------------- */
+const FlyToSpot = ({ spot }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (spot) {
+      map.flyTo([Number(spot.lat), Number(spot.lng)], 15, {
+        duration: 0.7,
+      });
+    }
+  }, [spot, map]);
+  return null;
+};
+
+/* ----------------------------------------------------------
+   ROUTING COMPONENT
+---------------------------------------------------------- */
+const Routing = ({ origin, destination, onRouteSummaryChange }) => {
+  const map = useMap();
+  const routingControlRef = useRef(null);
 
   useEffect(() => {
-    if (!destination) return;
-
-    const to = [Number(destination[0]), Number(destination[1])];
-    const from = origin ? [Number(origin[0]), Number(origin[1])] : null;
-
-    if (!L || !L.Routing || !L.Routing.control) {
-      console.warn('⚠️ Leaflet Routing Machine missing — drawing fallback polyline.');
-      const start = from || [map.getCenter().lat, map.getCenter().lng];
-      const pl = L.polyline([start, to], { color: 'blue', weight: 4, opacity: 0.8 }).addTo(map);
-      try {
-        map.fitBounds(pl.getBounds(), { padding: [60, 60] });
-      } catch (err) {
-        console.warn('fitBounds error:', err);
+    // Clear route if no destination
+    if (!destination) {
+      if (routingControlRef.current) {
+        map.removeControl(routingControlRef.current);
+        routingControlRef.current = null;
       }
-      return () => {
+      onRouteSummaryChange?.(null);
+      return;
+    }
+
+    const from = L.latLng(origin[0], origin[1]);
+    const to = L.latLng(destination[0], destination[1]);
+
+    // Clean up any existing control
+    if (routingControlRef.current) {
+      map.removeControl(routingControlRef.current);
+      routingControlRef.current = null;
+    }
+
+    const control = L.Routing.control({
+      waypoints: [from, to],
+      fitSelectedRoutes: true,
+      show: false,
+      addWaypoints: false,
+      routeWhileDragging: false,
+      draggableWaypoints: false,
+      createMarker: () => null,
+      lineOptions: {
+        styles: [{ color: "#1a73e8", weight: 5, opacity: 0.9 }],
+      },
+      router: L.Routing.osrmv1({
+        serviceUrl: "https://router.project-osrm.org/route/v1",
+      }),
+    })
+      .on("routesfound", (e) => {
         try {
-          if (pl && map.removeLayer) map.removeLayer(pl);
-        } catch (err) {
-          console.warn('Cleanup error:', err);
+          const route = e.routes[0];
+          const distanceKm = route.summary.totalDistance / 1000;
+          const durationMin = route.summary.totalTime / 60;
+          onRouteSummaryChange?.({
+            distanceKm,
+            durationMin,
+          });
+        } catch {
+          onRouteSummaryChange?.(null);
         }
-      };
-    }
+      })
+      .addTo(map);
 
-    let control;
-    try {
-      const router = L.Routing.osrmv1({
-        serviceUrl: 'https://router.project-osrm.org/route/v1',
-      });
-
-      control = L.Routing.control({
-        router,
-        waypoints: [
-          L.latLng(from ? from[0] : map.getCenter().lat, from ? from[1] : map.getCenter().lng),
-          L.latLng(to[0], to[1]),
-        ],
-        show: false,
-        addWaypoints: false,
-        draggableWaypoints: false,
-        routeWhileDragging: false,
-        createMarker: () => null,
-      }).addTo(map);
-    } catch (err) {
-      console.error('Routing control creation failed:', err);
-      const start = from || [map.getCenter().lat, map.getCenter().lng];
-      const pl = L.polyline([start, to], { color: 'blue', weight: 4, opacity: 0.8 }).addTo(map);
-      try {
-        map.fitBounds(pl.getBounds(), { padding: [60, 60] });
-      } catch (fitErr) {
-        console.warn('fitBounds error:', fitErr);
-      }
-      return () => {
-        try {
-          if (pl && map.removeLayer) map.removeLayer(pl);
-        } catch (cleanErr) {
-          console.warn('Cleanup error:', cleanErr);
-        }
-      };
-    }
-
-    const onRoutesFound = (e) => {
-      try {
-        const routes = e?.routes || control?.getRoutes?.();
-        if (routes && routes.length) {
-          const bounds = routes[0].bounds;
-          if (bounds) map.fitBounds(bounds, { padding: [60, 60] });
-        }
-      } catch (err) {
-        console.warn('onRoutesFound error:', err);
-      }
-    };
-
-    try {
-      control.on?.('routesfound', onRoutesFound);
-    } catch (err) {
-      console.warn('Control event binding failed:', err);
-    }
+    routingControlRef.current = control;
 
     return () => {
-      try {
-        if (control && map.removeControl) map.removeControl(control);
-      } catch (err) {
-        console.warn('Routing cleanup failed:', err);
+      if (routingControlRef.current) {
+        map.removeControl(routingControlRef.current);
+        routingControlRef.current = null;
       }
+      onRouteSummaryChange?.(null);
     };
-  }, [origin, destination, map]);
+  }, [origin, destination, map, onRouteSummaryChange]);
 
   return null;
 };
 
+/* ----------------------------------------------------------
+   MARKER IMAGE ICON
+---------------------------------------------------------- */
+const createImageMarker = (imgUrl, selected = false) =>
+  L.icon({
+    iconUrl: imgUrl,
+    iconSize: selected ? [64, 64] : [50, 50],
+    iconAnchor: [25, 50],
+    className: "custom-circle-icon",
+  });
+
+/* ----------------------------------------------------------
+   MAIN MAP PAGE
+---------------------------------------------------------- */
 const MapPage = () => {
   const navigate = useNavigate();
+
   const [isSatellite, setIsSatellite] = useState(true);
   const [userLocation, setUserLocation] = useState(null);
-  const [routeTo, setRouteTo] = useState(null);
-  const [flyToUser, setFlyToUser] = useState(false);
+
   const [touristSpots, setTouristSpots] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [filteredSpots, setFilteredSpots] = useState([]);
 
-  const mapCenter = [12.5269, 121.4380];
+  const [selectedSpot, setSelectedSpot] = useState(null);
+  const [routeTo, setRouteTo] = useState(null);
+  const [routeSummary, setRouteSummary] = useState(null);
 
-  // Geolocation
+  const [searchText, setSearchText] = useState("");
+  const [category, setCategory] = useState("all");
+  const [showNearbyOnly, setShowNearbyOnly] = useState(false);
+  const [followUser, setFollowUser] = useState(false);
+  const [flyToUser, setFlyToUser] = useState(false);
+
+  const NEARBY_RADIUS_KM = 2.0;
+  const mapCenter = [12.5269, 121.438];
+
+  /* ---------------------------------------------
+     GELOCATION
+  --------------------------------------------- */
   useEffect(() => {
     if (!navigator.geolocation) return;
+
     const watchId = navigator.geolocation.watchPosition(
-      (pos) => setUserLocation([pos.coords.latitude, pos.coords.longitude]),
-      (err) => console.warn('Geolocation error:', err),
-      { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 },
+      (pos) => {
+        setUserLocation([pos.coords.latitude, pos.coords.longitude]);
+      },
+      (err) => console.warn("Geolocation error:", err),
+      { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
     );
+
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
-  // Fetch tourist spots
+  /* ---------------------------------------------
+     FETCH TOURIST SPOTS
+  --------------------------------------------- */
   useEffect(() => {
     const fetchSpots = async () => {
-      setLoading(true);
       try {
-        const url = API_BASE ? `${API_BASE}/map/touristspots` : '/map/touristspots';
-        const res = await axios.get(url);
+        const res = await axios.get(`${API_BASE}/map/touristspots`);
         setTouristSpots(res.data || []);
-      } catch (error) {
-        console.error('Failed to fetch tourist spots:', error);
-      } finally {
-        setLoading(false);
+      } catch (err) {
+        console.error("Failed to fetch tourist spots:", err);
       }
     };
     fetchSpots();
   }, []);
 
-const getSpotImageUrl = (spot) => {
-  if (!spot.image_url) return null;
+  /* ---------------------------------------------
+     IMAGE URL BUILDER
+  --------------------------------------------- */
+  const getSpotImageUrl = (spot) => {
+    if (!spot.image_url) return null;
+    const cleanPath = spot.image_url.replace(/^\//, "");
+    return `${API_BASE}/${cleanPath}`;
+  };
 
-  // spot.image_url is like "/uploads/touristspotsmap/file.jpg"
-  const cleanBase = API_BASE ? API_BASE.replace(/\/$/, "") : "";
-  const cleanPath = spot.image_url.replace(/^\//, "");
+  /* ---------------------------------------------
+     FILTER, SEARCH, NEARBY, SORT
+  --------------------------------------------- */
+  useEffect(() => {
+    let spots = touristSpots.map((s) => {
+      const lat = Number(s.lat);
+      const lng = Number(s.lng);
+      let distanceKm = null;
 
-  return `${cleanBase}/${cleanPath}?t=${Date.now()}`;
-};
+      if (userLocation) {
+        distanceKm = haversineDistanceKm(
+          userLocation[0],
+          userLocation[1],
+          lat,
+          lng
+        );
+      }
 
+      return { ...s, lat, lng, distanceKm };
+    });
 
-const createImageIcon = (imgUrl) => {
-  if (!imgUrl) return null;
+    if (category !== "all") {
+      spots = spots.filter((s) => s.category === category);
+    }
 
-  return L.icon({
-    iconUrl: imgUrl,
-    iconSize: [46, 46],
-    iconAnchor: [23, 46],
-    popupAnchor: [0, -36],
-    className: "custom-circle-icon",
-  });
-};
+    if (searchText.trim()) {
+      const q = searchText.toLowerCase();
+      spots = spots.filter((s) => s.name.toLowerCase().includes(q));
+    }
 
+    if (showNearbyOnly && userLocation) {
+      spots = spots.filter(
+        (s) => s.distanceKm != null && s.distanceKm <= NEARBY_RADIUS_KM
+      );
+    }
 
+    // Sort by distance if nearby, else by rating then name
+    spots.sort((a, b) => {
+      if (showNearbyOnly && userLocation) {
+        return (a.distanceKm || Infinity) - (b.distanceKm || Infinity);
+      }
+      if ((b.avg_rating || 0) !== (a.avg_rating || 0)) {
+        return (b.avg_rating || 0) - (a.avg_rating || 0);
+      }
+      return a.name.localeCompare(b.name);
+    });
+
+    setFilteredSpots(spots);
+  }, [touristSpots, searchText, category, showNearbyOnly, userLocation]);
+
+  /* ---------------------------------------------
+     HANDLERS
+  --------------------------------------------- */
+  const handleSelectSpot = (spot) => {
+    setSelectedSpot(spot);
+    // Don't immediately start route; just open panel;
+    // user will click "Get Directions".
+  };
+
+  const handleStartRoute = () => {
+    if (!selectedSpot || !userLocation) return;
+    setRouteTo([selectedSpot.lat, selectedSpot.lng]);
+  };
+
+  const handleClearRoute = () => {
+    setRouteTo(null);
+    setRouteSummary(null);
+  };
+
+  /* ---------------------------------------------
+     RENDER
+  --------------------------------------------- */
   return (
     <div className="map-page-container">
+      {/* TOP BAR */}
       <div className="map-controls">
-        <button className="back-button-floating" onClick={() => navigate(-1)}>← Back</button>
+        <button onClick={() => navigate(-1)} className="back-button-floating">
+          ← Back
+        </button>
 
-        <div className="layer-toggle">
-          <label className="layer-label">Map View:</label>
-          <select
-            onChange={() => setIsSatellite(!isSatellite)}
-            value={isSatellite ? 'satellite' : 'street'}
+        <input
+          className="search-box"
+          placeholder="Search tourist spot..."
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+        />
+
+        <select
+          className="filter-box"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+        >
+          <option value="all">All</option>
+          <option value="beach">Beach</option>
+          <option value="hotel">Hotel</option>
+          <option value="restaurant">Restaurant</option>
+          <option value="park">Park</option>
+          <option value="cultural">Cultural</option>
+          <option value="mountain">Mountain</option>
+          <option value="falls">Falls</option>
+        </select>
+
+        <div className="toggle-group">
+          <button
+            className={`toggle-pill ${showNearbyOnly ? "active" : ""}`}
+            onClick={() => setShowNearbyOnly((v) => !v)}
           >
-            <option value="satellite">Satellite</option>
-            <option value="street">Street</option>
-          </select>
+            Nearby
+          </button>
+          <button
+            className={`toggle-pill ${followUser ? "active" : ""}`}
+            onClick={() => setFollowUser((v) => !v)}
+          >
+            Follow Me
+          </button>
         </div>
 
-        {routeTo && (
-          <button className="cancel-button" onClick={() => setRouteTo(null)}>
-            Cancel Directions
-          </button>
-        )}
+        <select
+          className="filter-box"
+          onChange={() => setIsSatellite(!isSatellite)}
+          value={isSatellite ? "satellite" : "street"}
+        >
+          <option value="satellite">Satellite</option>
+          <option value="street">Street</option>
+        </select>
       </div>
 
-      {!userLocation && (
-        <div style={{
-          padding: '6px 12px',
-          background: '#fff7cc',
-          color: '#794c00',
-          margin: '8px 12px',
-          borderRadius: 6,
-        }}>
-          ⚠️ Geolocation not available — using default map center.
+      {/* INFO PANEL LEFT */}
+      {selectedSpot && (
+        <div className="info-panel">
+          <button
+            className="info-close"
+            onClick={() => {
+              setSelectedSpot(null);
+              handleClearRoute();
+            }}
+          >
+            ✕
+          </button>
+
+          <img
+            className="info-image"
+            src={getSpotImageUrl(selectedSpot) || "/images/fallback.jpg"}
+            alt={selectedSpot.name}
+          />
+
+          <h2 className="info-title">{selectedSpot.name}</h2>
+          <p className="info-category">{selectedSpot.category}</p>
+
+          <div className="info-meta">
+            {selectedSpot.avg_rating != null && (
+              <div className="info-rating">
+                ⭐ {Number(selectedSpot.avg_rating).toFixed(1)}{" "}
+                <span className="muted">
+                  ({selectedSpot.rating_count || 0} reviews)
+                </span>
+              </div>
+            )}
+
+            {userLocation && selectedSpot.distanceKm != null && (
+              <div className="info-distance">
+                📍{" "}
+                {selectedSpot.distanceKm < 1
+                  ? `${(selectedSpot.distanceKm * 1000).toFixed(0)} m away`
+                  : `${selectedSpot.distanceKm.toFixed(1)} km away`}
+              </div>
+            )}
+          </div>
+
+          <button
+            className="info-directions-btn"
+            onClick={routeTo ? handleClearRoute : handleStartRoute}
+            disabled={!userLocation}
+          >
+            {routeTo ? "Clear Directions" : "Get Directions"}
+          </button>
+
+          <div className="info-extra">
+            <p className="muted">
+              Lat: {selectedSpot.lat} | Lng: {selectedSpot.lng}
+            </p>
+            {showNearbyOnly && selectedSpot.distanceKm != null && (
+              <span className="badge badge-nearby">Nearby</span>
+            )}
+          </div>
         </div>
       )}
 
+      {/* MAP */}
       <div className="map-container">
-        <MapContainer center={mapCenter} zoom={11} zoomControl={false} className="leaflet-map">
+        <MapContainer
+          center={mapCenter}
+          zoom={11}
+          zoomControl={false}
+          className="leaflet-map"
+        >
           <ZoomControl position="bottomright" />
+
+          {/* fly once when user taps my-location button */}
           {flyToUser && userLocation && (
-            <FlyToUser location={userLocation} trigger={flyToUser} setTrigger={setFlyToUser} />
+            <FlyToUser
+              location={userLocation}
+              trigger={flyToUser}
+              setTrigger={setFlyToUser}
+            />
           )}
-          {routeTo && (
-            <Routing origin={userLocation || mapCenter} destination={routeTo} />
+
+          {/* live follow mode */}
+          {userLocation && (
+            <FollowUser location={userLocation} follow={followUser} />
           )}
+
+          {/* fly to selected spot */}
+          {selectedSpot && <FlyToSpot spot={selectedSpot} />}
+
+          {/* Routing line */}
+          {routeTo && userLocation && (
+            <Routing
+              origin={userLocation}
+              destination={routeTo}
+              onRouteSummaryChange={setRouteSummary}
+            />
+          )}
+
+          {/* Base layer */}
           <TileLayer
             url={
               isSatellite
-                ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-                : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+                ? "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                : "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
             }
             attribution={
               isSatellite
-                ? 'Tiles © Esri — Sources: Esri, USGS, NOAA'
-                : '&copy; OpenStreetMap contributors'
+                ? "Tiles © Esri — Sources: Esri, USGS, NOAA"
+                : "&copy; OpenStreetMap contributors"
             }
           />
 
-          {!loading && touristSpots.map((spot, i) => {
-            const imgUrl = getSpotImageUrl(spot);
-            let markerIcon = null;
-            try {
-              markerIcon = createImageIcon(imgUrl);
-            } catch (err) {
-              console.warn('Failed to create marker icon:', err);
-            }
-
-            const lat = Number(spot.lat);
-            const lng = Number(spot.lng);
-
+          {/* Tourist spots markers */}
+          {filteredSpots.map((spot) => {
+            const imgUrl = getSpotImageUrl(spot) || "/images/fallback.jpg";
+            const isSelected = selectedSpot?.id === spot.id;
             return (
               <Marker
-                key={spot.id ?? i}
-                position={[lat, lng]}
-                icon={markerIcon || new L.Icon.Default()}
-              >
-                <Popup>
-                  <strong>{spot.name}</strong>
-                  <br />
-                  <small><strong>Category:</strong> {spot.category}</small>
-                  <br />
-                  <button
-                    onClick={() => setRouteTo([lat, lng])}
-                    style={{ marginTop: 6 }}
-                  >
-                    Get Directions
-                  </button>
-                </Popup>
-              </Marker>
+                key={spot.id}
+                position={[spot.lat, spot.lng]}
+                icon={createImageMarker(imgUrl, isSelected)}
+                eventHandlers={{
+                  click: () => handleSelectSpot(spot),
+                }}
+              />
             );
           })}
 
+          {/* User location marker */}
           {userLocation && (
             <Marker
               position={userLocation}
               icon={L.divIcon({
-                className: 'custom-location-icon',
-                html: '<div class="marker-pin"></div><i class="fa fa-map-marker"></i>',
-                iconSize: [30, 42],
-                iconAnchor: [15, 42],
+                html: `<div class="user-location-dot"></div>`,
+                className: "",
+                iconSize: [20, 20],
+                iconAnchor: [10, 10],
               })}
-            >
-              <Popup>You are here!</Popup>
-            </Marker>
+            />
           )}
         </MapContainer>
 
+        {/* My location floating button */}
         {userLocation && (
           <button
             className="my-location-icon-button"
@@ -309,7 +514,62 @@ const createImageIcon = (imgUrl) => {
             <img src={myLocationIcon} alt="My Location" />
           </button>
         )}
+
+        {/* Route summary pill */}
+        {routeSummary && (
+          <div className="route-summary-pill">
+            <span>
+              🚗 Distance: {routeSummary.distanceKm.toFixed(1)} km
+            </span>
+            <span>
+              ⏱ ETA: {Math.round(routeSummary.durationMin)} min
+            </span>
+          </div>
+        )}
+
+        {/* Bottom card strip */}
+        {filteredSpots.length > 0 && (
+          <div className="bottom-card-strip">
+            {filteredSpots.map((spot) => (
+              <div
+                key={spot.id}
+                className={`bottom-card ${
+                  selectedSpot?.id === spot.id ? "selected" : ""
+                }`}
+                onClick={() => handleSelectSpot(spot)}
+              >
+                <div className="bottom-card-image-wrap">
+                  <img
+                    src={getSpotImageUrl(spot) || "/images/fallback.jpg"}
+                    alt={spot.name}
+                    className="bottom-card-image"
+                  />
+                </div>
+                <div className="bottom-card-body">
+                  <div className="bottom-card-title">{spot.name}</div>
+                  <div className="bottom-card-category">{spot.category}</div>
+                  {spot.distanceKm != null && (
+                    <div className="bottom-card-distance">
+                      {spot.distanceKm < 1
+                        ? `${(spot.distanceKm * 1000).toFixed(0)} m`
+                        : `${spot.distanceKm.toFixed(1)} km`}
+                      {spot.distanceKm <= NEARBY_RADIUS_KM && (
+                        <span className="badge badge-nearby">Nearby</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
+
+      {!userLocation && (
+        <div className="geo-warning">
+          ⚠️ Geolocation not available — using default map center.
+        </div>
+      )}
     </div>
   );
 };
