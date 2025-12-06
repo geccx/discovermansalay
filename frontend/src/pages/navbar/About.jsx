@@ -4,9 +4,9 @@ import "./styles/About.css";
 
 // IMPORT IMAGES FROM YOUR PATH
 import mayorImg from "../../images/mayor.jpg";
-import mangyan1 from "../../images/magyan1.jpg";
-import mangyan2 from "../../images/magya2.jpg";
-import mangyan3 from "../../images/magyan3.jpg";
+import mangyan1 from "../../images/mangyan1.jpg";
+import mangyan2 from "../../images/mangyan2.jpg";
+import mangyan3 from "../../images/mangyan3.jpg";
 
 const About = () => {
   return (
