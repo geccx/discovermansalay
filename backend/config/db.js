@@ -199,8 +199,10 @@ async function ensureUnifiedContentTable(pool) {
   console.log("🗂️ Unified content table ensured");
 }
 
+/* ---------------------------------------------
+   ACCOMMODATION BOOKINGS TABLE
+--------------------------------------------- */
 async function ensureAccommodationBookingTable(pool) {
-  // Create table if missing
   await pool.query(`
     CREATE TABLE IF NOT EXISTS accommodation_bookings (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -210,6 +212,8 @@ async function ensureAccommodationBookingTable(pool) {
       user_contact VARCHAR(50),
       check_in DATE,
       check_out DATE,
+      check_in_time VARCHAR(8),
+      check_out_time VARCHAR(8),
       guests INT,
       status ENUM('pending','awaiting_management','confirmed','cancelled') DEFAULT 'pending',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -219,15 +223,19 @@ async function ensureAccommodationBookingTable(pool) {
 
   console.log("🏨 Accommodation bookings table ensured");
 
-  // ⭐ Apply schema patch to update ENUM (for existing databases)
-  await pool.query(`
-    ALTER TABLE accommodation_bookings
-    MODIFY COLUMN status 
-    ENUM('pending','awaiting_management','confirmed','cancelled')
-    DEFAULT 'pending';
-  `);
-
-  console.log("🔧 Booking status ENUM updated to include 'awaiting_management'");
+  // Ensure ENUM contains all statuses (for existing DBs)
+  try {
+    await pool.query(`
+      ALTER TABLE accommodation_bookings
+      MODIFY COLUMN status 
+      ENUM('pending','awaiting_management','confirmed','cancelled')
+      DEFAULT 'pending';
+    `);
+    console.log("🔧 Booking status ENUM updated");
+  } catch (err) {
+    // Ignore if ENUM already patched
+    console.log("ℹ️ Booking status ENUM already up to date");
+  }
 }
 
 /* ---------------------------------------------
@@ -315,7 +323,6 @@ async function initialize() {
   await ensureVisitorsAndLogsTables(pool);
   await ensureTouristSpotTables(pool);
   await ensureAccommodationBookingTable(pool);
-
 
   return pool;
 }

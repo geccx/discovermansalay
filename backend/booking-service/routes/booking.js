@@ -1,39 +1,42 @@
+// backend/booking-service/routes/booking.js
 const express = require("express");
 const router = express.Router();
 const { getPool } = require("../../config/db");
-const nodemailer = require("nodemailer");
+const brevo = require("@getbrevo/brevo");
 
 /* -------------------------------------------------------
-   SAFE EMAIL TRANSPORT (NO CRASH IF CREDENTIALS MISSING)
+   BREVO EMAIL API (Recommended for Railway)
 --------------------------------------------------------- */
-let transporter = null;
+const brevoClient = new brevo.TransactionalEmailsApi();
 
-if (process.env.NOTIFY_EMAIL && process.env.NOTIFY_EMAIL_PASS) {
-  transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.NOTIFY_EMAIL,
-      pass: process.env.NOTIFY_EMAIL_PASS,
-    },
-  });
-
-  console.log("📧 Email notifications enabled.");
+if (process.env.BREVO_API_KEY) {
+  brevoClient.setApiKey(
+    brevo.TransactionalEmailsApiApiKeys.apiKey,
+    process.env.BREVO_API_KEY
+  );
+  console.log("📧 Brevo email client initialized");
 } else {
-  console.log("⚠️ Email credentials missing — email notifications disabled.");
+  console.warn("⚠️ BREVO_API_KEY missing. Emails will be skipped.");
 }
 
-/* SAFE EMAIL SENDER */
-async function sendEmailSafe(options) {
-  if (!transporter) {
-    console.log("⚠️ Email skipped: Missing credentials.");
+async function sendEmail(to, subject, html) {
+  if (!process.env.BREVO_API_KEY || !process.env.SMTP_FROM) {
+    console.warn("⚠️ Missing Brevo config (BREVO_API_KEY / SMTP_FROM). Email skipped.");
     return false;
   }
 
   try {
-    await transporter.sendMail(options);
+    await brevoClient.sendTransacEmail({
+      sender: { email: process.env.SMTP_FROM, name: "Discover Mansalay" },
+      to: [{ email: to }],
+      subject,
+      htmlContent: html,
+    });
+
+    console.log("📩 Email sent to:", to);
     return true;
   } catch (err) {
-    console.error("⚠️ Failed to send email:", err.message);
+    console.error("❌ Email failed:", err.message);
     return false;
   }
 }
@@ -42,21 +45,17 @@ async function sendEmailSafe(options) {
    DATE & TIME FORMATTERS
 --------------------------------------------------------- */
 
-// FORMAT DATE → YYYY-MM-DD (drop timezone/ISO noise)
+// FORMAT DATE → YYYY-MM-DD
 function formatDate(value) {
   if (!value) return null;
 
-  // Already a string with T
   if (typeof value === "string") {
-    // If ISO-like: 2025-09-30T16:00:00.000Z → take part before "T"
     if (value.includes("T")) {
       return value.split("T")[0];
     }
-    // Otherwise assume it's already a clean date string
     return value;
   }
 
-  // If it's a Date object
   const d = new Date(value);
   if (isNaN(d)) return value;
 
@@ -72,9 +71,8 @@ function formatTime(value) {
 
   let raw = String(value);
 
-  // If value like "10:00:00", trim seconds
-  if (raw.split(":").length >= 2) {
-    const parts = raw.split(":");
+  const parts = raw.split(":");
+  if (parts.length >= 2) {
     let hh = parseInt(parts[0], 10);
     const mm = parts[1] || "00";
 
@@ -91,7 +89,7 @@ function formatTime(value) {
 }
 
 /* -------------------------------------------------------
-   USER CREATES BOOKING → STATUS defaults to 'pending'
+   USER CREATES BOOKING → STATUS = 'pending'
 --------------------------------------------------------- */
 router.post("/", async (req, res) => {
   try {
@@ -155,7 +153,6 @@ router.get("/", async (req, res) => {
       ORDER BY b.created_at DESC
     `);
 
-    // Apply formatting for frontend:
     const formatted = rows.map((b) => ({
       ...b,
       check_in: formatDate(b.check_in),
@@ -173,7 +170,6 @@ router.get("/", async (req, res) => {
 
 /* -------------------------------------------------------
    STEP 1 — ADMIN FORWARDS BOOKING TO MANAGEMENT
-   (status → 'awaiting_management')
 --------------------------------------------------------- */
 router.put("/confirm/:id", async (req, res) => {
   try {
@@ -198,7 +194,6 @@ router.put("/confirm/:id", async (req, res) => {
 
     const booking = rows[0];
 
-    // Update status
     await pool.query(
       `UPDATE accommodation_bookings SET status='awaiting_management' WHERE id=?`,
       [id]
@@ -209,12 +204,10 @@ router.put("/confirm/:id", async (req, res) => {
     const cleanInTime = formatTime(booking.check_in_time);
     const cleanOutTime = formatTime(booking.check_out_time);
 
-    // Email to management with confirm/cancel links
-    await sendEmailSafe({
-      from: process.env.NOTIFY_EMAIL,
-      to: booking.manager_email,
-      subject: `Discover Mansalay – Booking Approval Needed`,
-      html: `
+    await sendEmail(
+      booking.manager_email,
+      "Discover Mansalay – Booking Approval Needed",
+      `
         <div style="font-family:Arial,sans-serif;color:#033859;">
           <h2>New Booking Request for Your Accommodation</h2>
           <p>The Discover Mansalay admin has forwarded this booking request to you for approval.</p>
@@ -258,8 +251,8 @@ router.put("/confirm/:id", async (req, res) => {
           <p style="font-size:12px;color:#666;">If you did not expect this email, you can ignore it.</p>
           <p style="font-size:12px;color:#999;">Powered by Discover Mansalay</p>
         </div>
-      `,
-    });
+      `
+    );
 
     res.json({
       success: true,
@@ -338,7 +331,6 @@ router.get("/email/confirm/:id", async (req, res) => {
 
     const booking = rows[0];
 
-    // UPDATE STATUS
     await pool.query(
       `UPDATE accommodation_bookings SET status='confirmed' WHERE id=?`,
       [id]
@@ -349,12 +341,10 @@ router.get("/email/confirm/:id", async (req, res) => {
     const cleanInTime = formatTime(booking.check_in_time);
     const cleanOutTime = formatTime(booking.check_out_time);
 
-    // SEND EMAIL TO USER
-    await sendEmailSafe({
-      from: process.env.NOTIFY_EMAIL,
-      to: booking.user_email,
-      subject: `Your Booking is Confirmed – ${booking.accommodation_name}`,
-      html: `
+    await sendEmail(
+      booking.user_email,
+      `Your Booking is Confirmed – ${booking.accommodation_name}`,
+      `
         <div style="font-family:Arial;padding:20px;color:#333;">
           <h2 style="color:#28a745;">Booking Confirmed</h2>
           <p>Hello <b>${booking.user_name}</b>,</p>
@@ -376,10 +366,9 @@ router.get("/email/confirm/:id", async (req, res) => {
           <p style="color:#555;">Thank you for using Discover Mansalay!</p>
           <p style="font-size:12px;color:#888;">This is an automated message, please do not reply.</p>
         </div>
-      `,
-    });
+      `
+    );
 
-    // STYLED CONFIRMATION PAGE FOR MANAGEMENT
     return res.send(`
       <html>
       <head>
@@ -448,7 +437,6 @@ router.get("/email/cancel/:id", async (req, res) => {
 
     const booking = rows[0];
 
-    // UPDATE STATUS
     await pool.query(
       `UPDATE accommodation_bookings SET status='cancelled' WHERE id=?`,
       [id]
@@ -459,12 +447,10 @@ router.get("/email/cancel/:id", async (req, res) => {
     const cleanInTime = formatTime(booking.check_in_time);
     const cleanOutTime = formatTime(booking.check_out_time);
 
-    // SEND CANCELLATION EMAIL TO USER
-    await sendEmailSafe({
-      from: process.env.NOTIFY_EMAIL,
-      to: booking.user_email,
-      subject: `Your Booking was Cancelled – ${booking.accommodation_name}`,
-      html: `
+    await sendEmail(
+      booking.user_email,
+      `Your Booking was Cancelled – ${booking.accommodation_name}`,
+      `
         <div style="font-family:Arial;padding:20px;color:#333;">
           <h2 style="color:#d9534f;">Booking Cancelled</h2>
           <p>Hello <b>${booking.user_name}</b>,</p>
@@ -485,10 +471,9 @@ router.get("/email/cancel/:id", async (req, res) => {
           <p style="color:#555;">We apologize for the inconvenience.</p>
           <p style="font-size:12px;color:#888;">This is an automated message, please do not reply.</p>
         </div>
-      `,
-    });
+      `
+    );
 
-    // STYLED CANCELLATION PAGE FOR MANAGEMENT
     return res.send(`
       <html>
       <head>
