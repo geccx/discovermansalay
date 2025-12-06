@@ -171,27 +171,29 @@ const MapPage = () => {
     fetchSpots();
   }, []);
 
-  const getSpotImageUrl = (spot) => {
-    if (spot.image_url) return `${spot.image_url}?t=${Date.now()}`;
-    if (spot.image) {
-      const filename = encodeURIComponent(spot.image);
-      return API_BASE
-        ? `${API_BASE}/uploads/touristspotsmap/${filename}?t=${Date.now()}`
-        : `/uploads/touristspotsmap/${filename}?t=${Date.now()}`;
-    }
-    return null;
-  };
+const getSpotImageUrl = (spot) => {
+  if (!spot.image_url) return null;
 
-  const createImageIcon = (imgUrl) => {
-    if (!imgUrl) return null;
-    return L.icon({
-      iconUrl: imgUrl,
-      iconSize: [36, 36],
-      iconAnchor: [18, 36],
-      popupAnchor: [0, -36],
-      className: 'custom-circle-icon',
-    });
-  };
+  // spot.image_url is like "/uploads/touristspotsmap/file.jpg"
+  const cleanBase = API_BASE ? API_BASE.replace(/\/$/, "") : "";
+  const cleanPath = spot.image_url.replace(/^\//, "");
+
+  return `${cleanBase}/${cleanPath}?t=${Date.now()}`;
+};
+
+
+const createImageIcon = (imgUrl) => {
+  if (!imgUrl) return null;
+
+  return L.icon({
+    iconUrl: imgUrl,
+    iconSize: [46, 46],
+    iconAnchor: [23, 46],
+    popupAnchor: [0, -36],
+    className: "custom-circle-icon",
+  });
+};
+
 
   return (
     <div className="map-page-container">

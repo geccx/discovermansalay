@@ -83,13 +83,15 @@ const LocationSelectorMap = ({ lat, lng, setLat, setLng, previewUrl }) => {
 --------------------------------------------- */
 const TouristSpotForm = ({ onSubmit, onCancel, initialData = {}, saving }) => {
 
-  const buildPreviewUrl = (url) => {
-    if (!url) return null;
-    if (API_BASE && url.startsWith("/")) {
-      return `${API_BASE.replace(/\/$/, "")}${url}`;
-    }
-    return url;
-  };
+const buildPreviewUrl = (url) => {
+  if (!url) return null;
+
+  const cleanBase = API_BASE.replace(/\/$/, "");
+  const cleanPath = url.replace(/^\//, "");
+
+  return `${cleanBase}/${cleanPath}`;
+};
+
 
   const [name, setName] = useState(initialData.name || "");
   const [lat, setLat] = useState(initialData.lat ?? "");
@@ -249,15 +251,15 @@ const TouristSpots = () => {
     fetchSpots();
   }, []);
 
-  const getSpotImageUrl = (spot) => {
-    if (spot.image_url) {
-      if (API_BASE && spot.image_url.startsWith("/")) {
-        return `${API_BASE.replace(/\/$/, "")}${spot.image_url}?t=${Date.now()}`;
-      }
-      return `${spot.image_url}?t=${Date.now()}`;
-    }
-    return "/images/fallback.jpg";
-  };
+const getSpotImageUrl = (spot) => {
+  if (!spot.image_url) return "/images/fallback.jpg";
+
+  const cleanBase = API_BASE.replace(/\/$/, "");
+  const cleanPath = spot.image_url.replace(/^\//, "");
+
+  return `${cleanBase}/${cleanPath}?t=${Date.now()}`;
+};
+
 
   const handleAdd = async (formData) => {
     setSaving(true);
