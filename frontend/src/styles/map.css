@@ -1,336 +1,198 @@
-/* --- PAGE LAYOUT -------------------------------------------------------- */
-
-html, body {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-}
-
+/* PAGE STRUCTURE */
 .map-page-container {
-  position: relative;
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  height: 100dvh; /* Fix for iOS/Android viewport */
-  background: #f5f7fa;
+  position: relative;
 }
 
-.map-page-container.fullscreen {
-  position: fixed;
-  inset: 0;
-  height: 100dvh;
-  width: 100vw;
-  z-index: 9999;
-  background: #000;
-}
-
-/* --- TOP CONTROLS -------------------------------------------------------- */
-
+/* TOP CONTROLS */
 .map-controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
-  z-index: 2000; /* ALWAYS above map */
-  position: relative;
-}
-
-.map-controls-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.layer-toggle select {
-  padding: 6px 10px;
-  border-radius: 8px;
-  border: 1px solid #c8c8c8;
-  font-size: 0.85rem;
-}
-
-/* View mode buttons (Map / Satellite / etc) */
-.view-toggle button {
-  padding: 5px 12px;
-  border-radius: 999px;
-  border: 1px solid #ccc;
-  background: #fff;
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: 0.15s;
-}
-
-.view-toggle button.active {
-  background: #033859;
-  color: #fff;
-  border-color: #033859;
-}
-
-/* Follow user & fullscreen buttons */
-.follow-user-btn,
-.fullscreen-btn {
-  padding: 5px 14px;
-  border-radius: 999px;
-  border: 1px solid #ccc;
-  background: #fff;
-  font-size: 0.8rem;
-  cursor: pointer;
-}
-
-.follow-user-btn.active {
-  background: #033859;
-  color: #fff;
-}
-
-/* Search bar */
-.map-search-container {
-  flex: 1;
-  min-width: 210px;
-}
-
-.map-search-input {
-  width: 100%;
-  padding: 7px 14px;
-  border-radius: 999px;
-  border: 1px solid #ccc;
-  font-size: 0.85rem;
-  background: #fff;
-}
-
-/* --- CATEGORY CHIPS ------------------------------------------------------ */
-
-.category-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 0 12px 6px 12px;
+  position: absolute;
+  top: 12px;
+  left: 0;
+  right: 0;
   z-index: 2000;
-  position: relative;
-}
-
-.category-chip {
-  padding: 5px 12px;
-  border-radius: 999px;
-  border: 1px solid #ddd;
-  background: #fff;
-  font-size: 0.78rem;
-  cursor: pointer;
-  transition: 0.15s;
-}
-
-.category-chip.selected {
-  background: #033859;
-  border-color: #033859;
-  color: #fff;
-}
-
-.category-chip.clear-chip {
-  background: #f25749;
-  border-color: #f25749;
-  color: #fff;
-}
-
-/* --- WARNINGS ------------------------------------------------------------- */
-
-.map-warning-banner {
-  margin: 4px 12px;
-  padding: 8px 12px;
-  background: #fff7cc;
-  color: #7a4c00;
-  border-radius: 6px;
-  font-size: 0.82rem;
-}
-
-.map-warning-banner.error {
-  background: #ffe1e1;
-  color: #8b0015;
-}
-
-.route-info-banner {
-  margin: 4px 12px;
-  padding: 8px 12px;
-  background: #033859;
-  color: #fff;
-  border-radius: 8px;
-  font-size: 0.85rem;
   display: flex;
   justify-content: space-between;
+  padding: 0 16px;
   align-items: center;
 }
 
-.cancel-route-btn {
-  background: #f25749;
-  color: #fff;
+.back-button-floating,
+.location-button,
+.cancel-button {
+  background-color: #033859;
+  color: white;
   border: none;
-  border-radius: 999px;
-  padding: 5px 12px;
+  padding: 8px 12px;
+  border-radius: 7px;
+  font-size: 12px;
   cursor: pointer;
-  font-size: 0.8rem;
+  margin-right: 10px;
 }
 
-/* --- MAP CONTAINER -------------------------------------------------------- */
+.back-button-floating:hover {
+  background-color: #F25749;
+}
 
+.cancel-button {
+  background-color: #b00020;
+}
+
+.cancel-button:hover {
+  background-color: #d32f2f;
+}
+
+/* SEARCH INPUT */
+.search-box {
+  width: 260px;
+  padding: 7px 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 13px;
+}
+
+/* MAP CONTAINER */
 .map-container {
-  position: relative;
   flex: 1;
-  margin: 8px 12px 12px 12px;
-  border-radius: 14px;
+  position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.12);
 }
 
 .leaflet-map {
   height: 100%;
   width: 100%;
+  z-index: 1;
 }
 
-/* --- FLOATING USER LOCATION BUTTON --------------------------------------- */
-
-.my-location-icon-button {
-  position: absolute;
-  bottom: 88px;  /* Moved above zoom controls */
-  left: 12px;
-  width: 44px;
-  height: 44px;
+/* CUSTOM TOURIST SPOT IMAGE MARKER */
+.custom-circle-wrapper {
   border-radius: 50%;
-  border: none;
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 2500; /* Always visible */
 }
 
-.my-location-icon-button img {
-  width: 24px;
-  height: 24px;
-}
-
-/* --- SPOT MARKERS --------------------------------------------------------- */
-
-.spot-circle-icon {
-  pointer-events: none;
-}
-
-.spot-circle-wrapper {
-  position: relative;
+.custom-circle-icon {
   width: 48px;
   height: 48px;
-}
-
-.spot-circle-wrapper.small {
-  width: 40px;
-  height: 40px;
-}
-
-/* removed heavy drop shadow */
-.spot-circle-shadow {
-  display: none;
-}
-
-.spot-circle {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 46px;
-  height: 46px;
   border-radius: 50%;
   overflow: hidden;
   border: 3px solid #fff;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-  background: #ccc;
+  box-shadow: 0 0 6px rgba(0,0,0,0.35);
 }
 
-.spot-circle img {
+.custom-circle-icon img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-/* --- USER LOCATION PULSE -------------------------------------------------- */
-
-.user-location-icon {
-  pointer-events: none;
+/* REMOVE LEAFLET ROUTING UI */
+.leaflet-routing-container {
+  display: none !important;
 }
 
-.user-location-dot {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #2874ff;
-  border: 2px solid #fff;
-  position: relative;
-  z-index: 3;
-}
-
-.user-location-pulse {
+/* MY LOCATION BUTTON */
+.my-location-icon-button {
   position: absolute;
-  width: 28px;
-  height: 28px;
+  bottom: 110px;
+  right: 12px;
+  background-color: white;
+  border: none;
   border-radius: 50%;
-  background: rgba(40,116,255,0.25);
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  animation: pulse 1.6s infinite;
-  z-index: 1;
+  padding: 8px;
+  width: 44px;
+  height: 44px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  cursor: pointer;
+  z-index: 2000;
 }
 
-@keyframes pulse {
-  0% { transform: translate(-50%, -50%) scale(0.6); opacity: 0.9; }
-  100% { transform: translate(-50%, -50%) scale(1.7); opacity: 0; }
+.my-location-icon-button img {
+  width: 100%;
+  height: 100%;
 }
 
-/* --- HEAT POINTS ---------------------------------------------------------- */
-
-.heat-circle-icon {
-  pointer-events: none;
+/* INFO PANEL LEFT SIDE */
+.info-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 340px;
+  height: 100%;
+  background: white;
+  border-right: 1px solid #ddd;
+  padding: 18px;
+  overflow-y: auto;
+  z-index: 3000;
+  animation: panelSlideIn 0.25s ease-out;
 }
 
-.heat-circle {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255,0,0,0.7), transparent);
+@keyframes panelSlideIn {
+  from { left: -350px; opacity: 0; }
+  to { left: 0; opacity: 1; }
 }
 
-/* --- POPUPS --------------------------------------------------------------- */
-
-.spot-popup {
-  max-width: 240px;
+.info-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-size: 22px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
 }
 
-.spot-popup-image-wrapper {
+.info-image {
+  width: 100%;
+  height: 200px;
+  border-radius: 12px;
+  object-fit: cover;
+  margin-bottom: 12px;
+}
+
+.info-title {
+  font-size: 20px;
+  font-weight: bold;
   margin-bottom: 6px;
 }
 
-.spot-popup-image {
+.info-category {
+  font-size: 14px;
+  opacity: 0.7;
+  margin-bottom: 10px;
+}
+
+.info-description {
+  line-height: 1.45;
+  margin-bottom: 12px;
+}
+
+.info-directions-btn {
   width: 100%;
-  border-radius: 10px;
-  max-height: 130px;
-  object-fit: cover;
-}
-
-.spot-popup-category,
-.spot-popup-rating,
-.spot-popup-coords {
-  margin: 3px 0;
-  font-size: 0.8rem;
-}
-
-.spot-popup-btn {
-  margin-top: 6px;
-  padding: 6px 10px;
-  border-radius: 999px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #1a73e8;
   border: none;
+  color: white;
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 15px;
+  margin-bottom: 12px;
 }
 
-.spot-popup-btn.primary {
-  background: #033859;
-  color: #fff;
+/* REVIEWS */
+.info-review {
+  background: #f1f3f4;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.info-review-head {
+  display: flex;
+  justify-content: space-between;
+}
+
+.info-review-date {
+  opacity: 0.6;
+  font-size: 12px;
 }

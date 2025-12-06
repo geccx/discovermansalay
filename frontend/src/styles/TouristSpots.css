@@ -289,13 +289,3 @@
   }
 }
 
-/* TouristSpots.css additions (if not present) */
-
-.touristspot-map-container {
-  height: 280px;
-  border-radius: 12px;
-  overflow: hidden;
-  margin-bottom: 10px;
-}
-
-/* reuse circle styles from pages.css if you want, or keep both */
