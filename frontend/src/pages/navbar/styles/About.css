@@ -1,103 +1,271 @@
-/* ================================
-   HERO SECTION
-================================ */
-.about-hero {
-  width: 100%;
-  height: 55vh;
-  background: url("/images/mangyan1.jpg") center/cover no-repeat;
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+/* ============ GLOBAL SECTION STYLES ============ */
+.about-section {
+  padding: 60px 10%;
+  background: #f7f9fb;
 }
 
-.about-hero-overlay {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.6));
+.about-section:nth-of-type(even) {
+  background: #ffffff;
 }
 
-.about-hero-content {
-  position: relative;
-  text-align: center;
-  color: #fff;
-  z-index: 2;
-}
-
-.about-hero-content h1 {
-  font-size: 3.2rem;
-  font-weight: 800;
-  letter-spacing: 2px;
-}
-
-.about-hero-content p {
-  margin-top: 10px;
-  font-size: 1.25rem;
-  opacity: 0.9;
-}
-
-/* ================================
-   SECTION TITLE
-================================ */
 .section-title {
   text-align: center;
   font-size: 2.2rem;
   font-weight: 700;
-  margin-bottom: 30px;
   color: #033859;
+  margin-bottom: 25px;
 }
 
-/* ================================
-   ABOUT INFO CARDS
-================================ */
-.about-section {
-  padding: 60px 10%;
+.section-title-light {
+  color: #ffffff;
 }
 
-.about-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 25px;
+.about-text {
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: #033859;
+  margin-bottom: 18px;
 }
 
-.about-card {
-  background: #ffffff;
+/* ============ HERO (SOFT PARALLAX) ============ */
+.about-hero {
+  width: 100%;
+  height: 60vh;
+  position: relative;
+  background: url("/images/mangyan1.jpg") center/cover no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.about-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.4),
+    rgba(0, 0, 0, 0.7)
+  );
+}
+
+.about-hero-content {
+  position: relative;
+  color: #fff;
+  text-align: center;
+  padding: 0 10%;
+}
+
+.about-hero-content h1 {
+  font-size: 3rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.about-hero-content p {
+  margin-top: 10px;
+  font-size: 1.2rem;
+  opacity: 0.95;
+}
+
+/* ============ GENERIC PARALLAX SECTION ============ */
+.parallax-section {
+  position: relative;
+  background-attachment: fixed;
+  background-size: cover;
+  background-position: center;
+  color: #fff;
+  padding: 80px 10%;
+}
+
+.festival-section {
+  background-image: url("/images/mangyan1.jpg");
+}
+
+.heritage-section {
+  background-image: url("/images/mangyan3.jpg");
+}
+
+.parallax-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.parallax-content {
+  position: relative;
+  max-width: 900px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.parallax-text {
+  margin-top: 10px;
+  font-size: 1.05rem;
+  line-height: 1.8;
+}
+
+/* So parallax doesn’t break on mobile */
+@media (max-width: 768px) {
+  .parallax-section {
+    background-attachment: scroll;
+  }
+}
+
+/* ============ MAYOR MESSAGE ============ */
+.message-card {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
   padding: 25px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+.mayor-img {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.mayor-name {
+  margin-top: 8px;
+  font-weight: 700;
+  color: #f25749;
+}
+
+/* ============ HISTORY TIMELINE (HORIZONTAL) ============ */
+.history-timeline {
+  margin-top: 30px;
+  padding: 15px 10px 5px;
+  display: flex;
+  gap: 25px;
+  overflow-x: auto;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  background: #eef3f8;
+  scroll-snap-type: x mandatory;
 }
 
-.about-card:hover {
+.history-timeline::-webkit-scrollbar {
+  height: 6px;
+}
+.history-timeline::-webkit-scrollbar-track {
+  background: #d9e3f0;
+  border-radius: 3px;
+}
+.history-timeline::-webkit-scrollbar-thumb {
+  background: #033859;
+  border-radius: 3px;
+}
+
+.timeline-item {
+  position: relative;
+  min-width: 220px;
+  padding: 18px 16px 16px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+  scroll-snap-align: start;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.timeline-item:hover {
   transform: translateY(-6px);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
 }
 
-.about-card h3 {
-  margin-bottom: 12px;
-  color: #F25749;
-  font-size: 1.4rem;
+.timeline-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #f25749;
+  position: absolute;
+  top: -7px;
+  left: 16px;
+  box-shadow: 0 0 0 4px rgba(242, 87, 73, 0.25);
 }
 
-/* ================================
-   GALLERY SECTION
-================================ */
-.gallery-section {
-  padding: 60px 10%;
+.timeline-year {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #033859;
+  margin-bottom: 6px;
 }
 
+.timeline-text {
+  font-size: 0.95rem;
+  color: #334b63;
+}
+
+/* ============ SURAT + SYMBOLS ============ */
+.info-with-image {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  margin-bottom: 25px;
+}
+
+.info-with-image img {
+  width: 320px;
+  max-width: 100%;
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+
+.about-list {
+  padding-left: 18px;
+  margin-bottom: 18px;
+}
+
+.about-list li {
+  margin-bottom: 8px;
+}
+
+/* SYMBOL CARDS */
+.symbols-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+  margin-top: 10px;
+}
+
+.symbol-card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 18px 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.symbol-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.symbol-card h3 {
+  color: #f25749;
+  margin-bottom: 8px;
+}
+
+/* ============ GALLERY GRID ============ */
 .gallery-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 20px;
+  gap: 18px;
 }
 
 .gallery-item {
-  background: #fff;
-  border-radius: 12px;
+  background: #ffffff;
+  border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.gallery-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
 }
 
 .gallery-item img {
@@ -107,42 +275,53 @@
 }
 
 .gallery-caption {
-  text-align: center;
-  padding: 12px;
-  color: #033859;
+  padding: 10px 14px 14px;
+  font-size: 0.98rem;
   font-weight: 600;
-}
-
-/* ================================
-   MESSAGE SECTION
-================================ */
-.about-message {
-  padding: 60px 8%;
-  text-align: center;
-  background: #f7f9fb;
-  border-top: 3px solid #03385910;
-}
-
-.about-message p {
-  max-width: 850px;
-  margin: auto;
-  font-size: 1.2rem;
   color: #033859;
-  line-height: 1.7;
+  text-align: center;
 }
 
-/* ================================
-   ANIMATIONS
-================================ */
+/* ============ ANIMATIONS ============ */
 .fade-in {
   opacity: 0;
-  transform: translateY(25px);
-  animation: fadeInUp 0.8s forwards ease-out;
+  transform: translateY(30px);
+  animation: fadeInUp 0.7s ease-out forwards;
 }
 
 @keyframes fadeInUp {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 900px) {
+  .message-card,
+  .info-with-image {
+    flex-direction: column;
+    text-align: left;
+  }
+
+  .message-card {
+    align-items: center;
+  }
+
+  .mayor-img {
+    margin-bottom: 10px;
+  }
+}
+
+@media (max-width: 600px) {
+  .about-section,
+  .parallax-section,
+  .about-hero-content {
+    padding-left: 7%;
+    padding-right: 7%;
+  }
+
+  .about-hero-content h1 {
+    font-size: 2.3rem;
   }
 }
