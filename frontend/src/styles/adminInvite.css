@@ -1,97 +1,65 @@
-/* Overlay */
-.invite-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.65);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  z-index: 1000;
+/* ===============================
+   RESPONSIVE FIXES
+   =============================== */
+
+/* Tablets & smaller screens */
+@media (max-width: 768px) {
+  .invite-modal {
+    max-width: 380px;
+    padding: 22px;
+  }
+
+  .invite-title {
+    font-size: 20px;
+  }
+
+  .invite-group input {
+    font-size: 14px;
+    padding: 9px;
+  }
+
+  .invite-btn {
+    font-size: 15px;
+    padding: 11px;
+  }
 }
 
-/* Modal Box */
-.invite-modal {
-  background: #ffffff;
-  width: 100%;
-  max-width: 430px;
-  padding: 25px 30px;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-  animation: fadeIn 0.25s ease-out;
-}
+/* Mobile phones */
+@media (max-width: 480px) {
+  .invite-modal-overlay {
+    padding: 10px; /* ensure modal never touches screen edges */
+  }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+  .invite-modal {
+    max-width: 100%;
+    padding: 18px;
+    border-radius: 10px;
+  }
 
-.invite-title {
-  text-align: center;
-  font-size: 22px;
-  font-weight: bold;
-  margin-bottom: 10px;
-}
+  .invite-title {
+    font-size: 18px;
+  }
 
-.invite-error {
-  background: #ffebeb;
-  border-left: 4px solid #e02929;
-  padding: 10px;
-  margin-bottom: 12px;
-  color: #b91c1c;
-  font-size: 14px;
-  border-radius: 4px;
-}
+  .invite-group label {
+    font-size: 13px;
+  }
 
-.invite-success {
-  color: #22bb33;
-  font-size: 16px;
-  text-align: center;
-}
+  .invite-group input {
+    font-size: 14px;
+    padding: 10px;
+  }
 
-/* Form */
-.invite-form {
-  display: flex;
-  flex-direction: column;
-}
+  .invite-btn {
+    padding: 10px;
+    font-size: 14px;
+  }
 
-.invite-group {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 12px;
-}
+  .invite-error {
+    font-size: 13px;
+    padding: 8px;
+  }
 
-.invite-group label {
-  font-size: 14px;
-  margin-bottom: 5px;
-  font-weight: 500;
-}
-
-.invite-group input {
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 15px;
-}
-
-.invite-btn {
-  width: 100%;
-  padding: 12px;
-  background: #e35549;
-  color: #fff;
-  font-weight: bold;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  margin-top: 8px;
-  font-size: 16px;
-}
-
-.invite-btn:hover {
-  background: #c4443a;
-}
-
-.invite-label {
-  margin-bottom: 10px;
-  font-size: 14px;
+  .invite-success {
+    font-size: 15px;
+  }
 }

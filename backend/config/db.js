@@ -167,8 +167,19 @@ async function ensureUserAndWishlistTables(pool) {
   `);
 
   console.log("🧩 User + Wishlist tables ensured");
+  // ---------- AUTO-MIGRATION: Check missing verification_method ----------
+  const [userCols] = await pool.query(`SHOW COLUMNS FROM users`);
+  const hasVerificationMethod = userCols.some(c => c.Field === "verification_method");
 
-  // ---------- AUTO-MIGRATION: Check if image_path exists ----------
+  if (!hasVerificationMethod) {
+    await pool.query(`
+      ALTER TABLE users
+      ADD COLUMN verification_method VARCHAR(20) DEFAULT 'email' AFTER otp_expires_at
+    `);
+    console.log("🛠️ Added missing verification_method to users");
+  }
+
+  // ---------- AUTO-MIGRATION: Check missing image_path in wishlist ----------
   const [wishCols] = await pool.query(`SHOW COLUMNS FROM wishlist`);
   const hasImagePath = wishCols.some((c) => c.Field === "image_path");
 
@@ -179,7 +190,6 @@ async function ensureUserAndWishlistTables(pool) {
     `);
     console.log("🛠️ Added missing image_path to wishlist");
   }
-}
 
 
 /* ---------------------------------------------
